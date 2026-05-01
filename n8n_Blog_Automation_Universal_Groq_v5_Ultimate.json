@@ -1,0 +1,158 @@
+{
+  "name": "SmartChoose AI Blog Writer (Groq Ultimate v5)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "hours": 9
+            }
+          ]
+        }
+      },
+      "id": "7fa84d9f-028c-4861-848e-2e0617300abc",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "manual-ai-blog",
+        "options": {}
+      },
+      "id": "2e3a5f6b-1c2d-4e5f-8a9b-0c1d2e3f4g5h",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 500],
+      "webhookId": "manual-ai-blog"
+    },
+    {
+      "parameters": {
+        "url": "https://smartchoose-proxy.vercel.app/api/ai-blog-helper?action=get-unblogged",
+        "options": {}
+      },
+      "id": "18f237bc-8a7e-4b72-9174-8d93c12a7d83",
+      "name": "Fetch Unblogged Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"model\": \"llama-3.3-70b-versatile\", \"messages\": [{ \"role\": \"user\", \"content\": 'Write an engaging blog review for ' + $json.product.title + '. Details: ' + JSON.stringify($json.product) + '\\n\\nReturn ONLY RAW JSON like this:\\n{\\n \"title\": \"Title\",\\n \"slug\": \"slug\",\\n \"intro\": \"intro\",\\n \"content\": \"content\",\\n \"seoTitle\": \"seoTitle\",\\n \"seoDescription\": \"seoDescription\",\\n \"category\": \"' + ($json.product.category || 'Gadgets') + '\",\\n \"featuredImage\": \"' + $json.product.images[0] + '\",\\n \"products\": [' + JSON.stringify({\n    id: $json.product.id,\n    name: $json.product.title,\n    price: $json.product.price,\n    image: $json.product.images[0],\n    description: \"Expert review of this product.\",\n    pros: $json.product.pros || [],\n    cons: $json.product.cons || [],\n    affiliateLink: $json.product.affiliateLink || ($json.product.affiliateLinks && $json.product.affiliateLinks[0] ? $json.product.affiliateLinks[0].url : ''),\n    smartChooseId: $json.product.id\n  }) + ']\\n}' }] } }}",
+        "options": {}
+      },
+      "id": "4b6c3e91-8d2a-4491-9c8a-beab06173de2",
+      "name": "Groq AI Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [700, 400]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "try {\n  const rawText = $json.choices[0].message.content;\n  // Robust extraction of JSON from markdown blocks\n  const matches = rawText.match(/\\{[\\s\\S]*\\}/);\n  if (matches) {\n    return JSON.parse(matches[0]);\n  }\n  return JSON.parse(rawText);\n} catch (e) {\n  throw new Error(\"Parsing AI Output Failed: \" + e.message + \" | Raw: \" + JSON.stringify($json));\n}"
+      },
+      "id": "5f3a6b1c-9d8e-4a2b-b1c2-d3e4f5g6h7i8",
+      "name": "Extract & Parse AI JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [950, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://smartchoose-proxy.vercel.app/api/ai-blog-helper?action=create-post",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "3c9d81e7-6b2f-4a01-9c8a-deac09173fb1",
+      "name": "Post to SmartChoose",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Unblogged Product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Unblogged Product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Unblogged Product": {
+      "main": [
+        [
+          {
+            "node": "Groq AI Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq AI Generation": {
+      "main": [
+        [
+          {
+            "node": "Extract & Parse AI JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Parse AI JSON": {
+      "main": [
+        [
+          {
+            "node": "Post to SmartChoose",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true
+}

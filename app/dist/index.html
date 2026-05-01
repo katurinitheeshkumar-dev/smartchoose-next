@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google-site-verification" content="Du6nLF1oWgKm2B-AfzXtctIn0k6-JtEFKXBWsiXXq-o" />
+    <meta name="description" content="SmartChoose - Premium curated products with verified affiliate links. Compare prices across Amazon, Flipkart, Meesho & more. Save money on every purchase." />
+    <meta name="keywords" content="affiliate products, best deals India, Amazon deals, Flipkart offers, compare prices, buy online India, SmartChoose" />
+    <meta name="author" content="SmartChoose" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#10B981" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SmartChoose" />
+    <!-- Resource Hints for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    
+    <!-- Speculative Prefetch for next likely pages -->
+    <link rel="prefetch" href="/jobs" />
+    <link rel="prefetch" href="/blog" />
+    
+    <!-- Inline Critical CSS & Skeleton UI -->
+    <style>
+      :root {
+        --primary: #10B981;
+        --background: #FFFFFF;
+        --foreground: #0F172A;
+        --radius: 0.75rem;
+      }
+      
+      /* Font fallback metric overrides — prevents CLS when custom fonts swap in */
+      @font-face {
+        font-family: 'Inter-fallback';
+        src: local('Arial');
+        ascent-override: 90%;
+        descent-override: 22%;
+        line-gap-override: 0%;
+        size-adjust: 107%;
+      }
+
+      @font-face {
+        font-family: 'PlusJakarta-fallback';
+        src: local('Arial');
+        ascent-override: 92%;
+        descent-override: 24%;
+        line-gap-override: 0%;
+        size-adjust: 104%;
+      }
+
+      * { font-family: 'Plus Jakarta Sans', 'PlusJakarta-fallback', 'Inter', 'Inter-fallback', sans-serif; box-sizing: border-box; }
+      body { background-color: #FFFFFF; color: #0F172A; min-height: 100vh; margin: 0; -webkit-font-smoothing: antialiased; }
+      
+      /* Skeleton UI Styles */
+      #skeleton-header { height: 64px; border-bottom: 1px solid #f1f5f9; background: #ffffff; width: 100%; position: fixed; top: 0; z-index: 100; }
+      #skeleton-hero { padding-top: 104px; padding-bottom: 60px; text-align: center; max-width: 800px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }
+      .skel-badge { width: 180px; height: 32px; background: #f1f5f9; border-radius: 20px; margin: 0 auto 24px; }
+      .skel-h1 { height: 48px; background: #f8fafc; border-radius: 12px; margin-bottom: 24px; width: 80%; margin-left: 10%; }
+      .skel-p { height: 20px; background: #f8fafc; border-radius: 6px; margin-bottom: 12px; width: 90%; margin-left: 5%; }
+      .skel-btn { width: 200px; height: 52px; background: #10B981; border-radius: 16px; margin: 32px auto 0; opacity: 0.15; }
+      
+      .skel-shimmer {
+        background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: skel-shimmer 1.5s infinite;
+      }
+      @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      .fade-out { opacity: 0; transition: opacity 0.4s ease-out; pointer-events: none; }
+    </style>
+    
+    <!-- Optimized Font Loading: high-priority preloads for LCP fonts -->
+    <link rel="preload" as="image" href="/logo.png" type="image/png" fetchpriority="high" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Plus+Jakarta+Sans:wght@700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Plus+Jakarta+Sans:wght@700&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Plus+Jakarta+Sans:wght@700&display=swap" /></noscript>
+
+    <!-- Canonical Managed by App -->
+    <link rel="canonical" href="https://smartchoose.in/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SmartChoose" />
+    <meta property="og:title" content="SmartChoose - Premium Products, Smart Choices" />
+    <meta property="og:description" content="Discover premium products manually verified for quality. Compare prices across Amazon, Flipkart & more. Shop smart today!" />
+    <meta property="og:url" content="https://smartchoose.in/" />
+    <meta property="og:image" content="https://smartchoose.in/logo.png" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@smartchoose_in" />
+    <meta name="twitter:url" content="https://smartchoose.in/" />
+    <meta name="twitter:title" content="SmartChoose - Premium Products, Smart Choices" />
+    <meta name="twitter:description" content="Discover premium products manually verified for quality. Compare prices and shop smart today!" />
+    <meta name="twitter:image" content="https://smartchoose.in/logo.png" />
+
+    <!-- Favicon / Icons -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+    <link rel="mask-icon" href="/logo.png" color="#10B981" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>SmartChoose - Premium Products, Smart Choices</title>
+    <script type="module" crossorigin src="/assets/js/index-BfQ2EXLZ.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/js/vendor-others-Dx8rmk6f.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/vendor-charts-B3SmPLXb.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/vendor-core-Di5opfiW.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/vendor-firebase-YV5xFhv5.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/vendor-motion-CtPyTaWh.js">
+    <link rel="stylesheet" crossorigin href="/assets/css/index-CtCKg6tb.css">
+  </head>
+  <body>
+    <!-- Skeleton UI for Immediate Paint -->
+    <div id="skeleton-ui">
+      <div id="skeleton-header">
+        <div style="max-width: 1280px; margin: 0 auto; height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;">
+          <div class="skel-shimmer" style="width: 48px; height: 48px; background: #f1f5f9; border-radius: 12px;"></div>
+          <div class="skel-shimmer" style="flex: 1; max-width: 400px; height: 44px; background: #f8fafc; border-radius: 14px; margin: 0 20px;"></div>
+          <div class="skel-shimmer" style="width: 120px; height: 36px; background: #f1f5f9; border-radius: 10px;"></div>
+        </div>
+      </div>
+      <div id="skeleton-hero">
+        <div class="skel-badge skel-shimmer"></div>
+        <div class="skel-h1 skel-shimmer"></div>
+        <div class="skel-p skel-shimmer"></div>
+        <div class="skel-p skel-shimmer" style="width: 50%; margin-left: 25%;"></div>
+        <div class="skel-btn skel-shimmer"></div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+  </body>
+
+</html>

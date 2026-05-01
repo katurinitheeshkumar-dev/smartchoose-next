@@ -1,0 +1,17 @@
+{
+    "name": "smartchoose-proxy",
+    "version": "1.0.0",
+    "description": "SmartChoose product fetch proxy - runs on Vercel free tier",
+    "private": true,
+    "scripts": {
+        "dev": "vercel dev"
+    },
+    "engines": {
+        "node": "22.x"
+    },
+    "dependencies": {
+        "@vercel/og": "^0.6.3",
+        "dotenv": "^17.4.2",
+        "firebase-admin": "^12.7.0"
+    }
+}

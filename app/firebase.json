@@ -1,0 +1,83 @@
+{
+    "hosting": {
+        "public": "dist",
+        "trailingSlash": false,
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "redirects": [
+            {
+                "source": "/sitemap.xml",
+                "destination": "https://smartchoose-proxy.vercel.app/api/dynamic-feeds?type=sitemap",
+                "type": 302
+            },
+            {
+                "source": "/shopping-feed.xml",
+                "destination": "https://smartchoose-proxy.vercel.app/api/dynamic-feeds?type=shopping",
+                "type": 302
+            }
+        ],
+        "rewrites": [
+            {
+                "source": "/sitemap.xml",
+                "destination": "https://smartchoose-proxy.vercel.app/api/dynamic-feeds?type=sitemap"
+            },
+            {
+                "source": "/shopping-feed.xml",
+                "destination": "https://smartchoose-proxy.vercel.app/api/dynamic-feeds?type=shopping"
+            },
+            {
+                "source": "**",
+                "destination": "/index.html"
+            }
+        ],
+        "cleanUrls": true,
+        "headers": [
+            {
+                "source": "assets/**",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "public, max-age=31536000, immutable"
+                    }
+                ]
+            },
+            {
+                "source": "**/*.@(js|css|jpg|jpeg|gif|png|svg|webp|woff|woff2|ico)",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "public, max-age=31536000, immutable"
+                    }
+                ]
+            },
+            {
+                "source": "sw.js",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "no-cache, no-store, must-revalidate"
+                    }
+                ]
+            },
+            {
+                "source": "**/*.html",
+                "headers": [
+                    {
+                        "key": "Cache-Control",
+                        "value": "no-cache, no-store, must-revalidate"
+                    }
+                ]
+            }
+        ]
+    },
+    "firestore": {
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+    },
+    "storage": {
+        "rules": "storage.rules"
+    }
+}

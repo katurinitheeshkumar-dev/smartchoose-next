@@ -1,0 +1,30 @@
+{
+  "name": "SmartChoose Bulk Fetcher",
+  "version": "1.0",
+  "manifest_version": 3,
+  "description": "Extract bulk products from Amazon/Flipkart and send directly to SmartChoose Admin.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.amazon.in/*",
+    "*://*.flipkart.com/*",
+    "*://smartchoose.in/*",
+    "*://localhost/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.amazon.in/*", "*://*.flipkart.com/*"],
+      "js": ["scraper.js"]
+    },
+    {
+      "matches": ["*://smartchoose.in/*", "*://localhost/*"],
+      "js": ["injector.js"]
+    }
+  ]
+}
