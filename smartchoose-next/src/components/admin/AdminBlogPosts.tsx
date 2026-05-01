@@ -336,7 +336,7 @@ export function AdminBlogPosts() {
           <input className="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm" placeholder="Search posts..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
         </div>
         <div className="flex gap-2">
-          {['all', 'published', 'draft'].map(s => (
+          {['all', 'published', 'draft'].map((s: string) => (
             <button key={s} onClick={()=>setFilterStatus(s as any)} className={`px-4 py-2.5 rounded-xl text-sm font-semibold capitalize ${filterStatus === s ? 'bg-emerald-500 text-white' : 'bg-white border'}`}>{s}</button>
           ))}
         </div>
@@ -349,7 +349,7 @@ export function AdminBlogPosts() {
           <div className="py-20 text-center text-slate-400 font-bold uppercase text-xs">No posts found</div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {localBlogs.map(post => (
+            {localBlogs.map((post: any) => (
               <div key={post.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 cursor-pointer group" onClick={()=>{setEditingPost(post); setView('editor');}}>
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0">
                   <img src={post.featuredImage || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />

@@ -47,14 +47,20 @@ export function HeroSection() {
   // Get special offer (product with highest discount percentage)
   const specialOfferProduct = [...(products || [])]
     .sort((a, b) => {
-      const discountA = a.originalPrice > 0 ? ((a.originalPrice - a.price) / a.originalPrice) : 0;
-      const discountB = b.originalPrice > 0 ? ((b.originalPrice - b.price) / b.originalPrice) : 0;
+      const priceA = parseFloat(a.price.replace(/[^0-9.]/g, '')) || 0;
+      const origA = parseFloat(a.originalPrice?.replace(/[^0-9.]/g, '') || '0') || 0;
+      const discountA = origA > 0 ? ((origA - priceA) / origA) : 0;
+      
+      const priceB = parseFloat(b.price.replace(/[^0-9.]/g, '')) || 0;
+      const origB = parseFloat(b.originalPrice?.replace(/[^0-9.]/g, '') || '0') || 0;
+      const discountB = origB > 0 ? ((origB - priceB) / origB) : 0;
+      
       return discountB - discountA;
     })[0];
 
   // Get latest blog post
   const latestBlog = [...(blogPosts || [])]
-    .filter(b => b && b.published)
+    .filter(b => b && b.status === 'published')
     .sort((a, b) => {
       // Use createdAt or a fallback date
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -331,7 +337,7 @@ export function HeroSection() {
                      {latestBlog ? latestBlog.title : 'Read our latest buying guides'}
                    </div>
                    <div className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-1 line-clamp-1">
-                     {latestBlog && latestBlog.excerpt ? latestBlog.excerpt : 'Discover tips, tricks, and expert recommendations.'}
+                     {latestBlog ? (latestBlog.intro || (latestBlog as any).excerpt || 'Discover tips, tricks, and expert recommendations.') : 'Discover tips, tricks, and expert recommendations.'}
                    </div>
                  </div>
                  <div className="relative z-10 flex items-center shrink-0">

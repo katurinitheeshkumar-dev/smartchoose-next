@@ -268,7 +268,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
               <div>
                 <h3 className="font-bold text-slate-900 mb-3">Key Features</h3>
                 <ul className="space-y-2">
-                  {product.features.map((feature, idx) => (
+                  {product.features.map((feature: string, idx: number) => (
                     <li key={idx} className="flex items-start gap-2 text-slate-600">
                       <Icon name="check" size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
                       {feature}
@@ -413,10 +413,10 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
               <table className="w-full">
                 <tbody>
-                  {Object.entries(product.specifications).map(([key, value], idx) => (
+                  {Object.entries(product.specifications).map(([item, value]: [string, any], idx: number) => (
                     <tr key={idx} className="border-b border-slate-100 last:border-0">
                       <td className="px-6 py-4 font-medium text-slate-500 w-1/3 bg-slate-50">
-                        {key}
+                        {item}
                       </td>
                       <td className="px-6 py-4 text-slate-900">
                         {value}
@@ -443,7 +443,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
                 Why You'll Love It
               </h3>
               <ul className="space-y-2">
-                {product.pros.map((pro, idx) => (
+                {product.pros.map((pro: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-2 text-emerald-800">
                     <Icon name="check" size={16} className="mt-1 flex-shrink-0" />
                     {pro}
@@ -464,7 +464,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
           >
             <h2 className="text-2xl font-bold text-slate-900 mb-6">Frequently Asked Questions</h2>
             <div className="space-y-4">
-              {product.faq.map((item, idx) => (
+              {product.faq.map((item: { q: string, a: string }, idx: number) => (
                 <div key={idx} className="bg-white rounded-xl p-6 shadow-sm">
                   <h3 className="font-bold text-slate-900 mb-2 flex items-start gap-2">
                     <Icon name="help-circle" size={20} className="text-emerald-500 flex-shrink-0 mt-0.5" />

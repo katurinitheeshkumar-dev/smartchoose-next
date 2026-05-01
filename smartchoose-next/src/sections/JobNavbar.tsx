@@ -26,7 +26,7 @@ export function JobNavbar() {
 
           {/* Brand — Jobs Portal Identity */}
           <Link
-            to="/jobs"
+            href="/jobs"
             className="flex items-center gap-3 select-none group"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/30 group-hover:scale-105 transition-transform">
@@ -41,14 +41,14 @@ export function JobNavbar() {
           {/* Center Nav */}
           <nav className="hidden md:flex items-center gap-1">
             <Link
-              to="/jobs"
+              href="/jobs"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all"
             >
               <Icon name="layout-grid" size={15} />
               All Jobs
             </Link>
             <Link
-              to="/blog"
+              href="/blog"
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
             >
               <Icon name="file-text" size={15} />
@@ -60,7 +60,7 @@ export function JobNavbar() {
           <div className="flex items-center gap-2">
             {/* Mobile Back */}
             <button
-              onClick={() => router.push(-1)}
+              onClick={() => router.back()}
               className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all"
             >
               <Icon name="arrow-left" size={16} />

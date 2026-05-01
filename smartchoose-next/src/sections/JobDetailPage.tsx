@@ -308,7 +308,7 @@ export default function JobDetailPage() {
               {similarJobs.slice(0, 6).map(sj => (
                 <Link 
                   key={sj.id} 
-                  to={`/jobs/${sj.id}`}
+                  href={`/jobs/${sj.id}`}
                   className="group bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full relative overflow-hidden"
                 >
                   {/* Subtle Background Pattern */}

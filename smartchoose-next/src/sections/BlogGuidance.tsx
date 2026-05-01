@@ -52,7 +52,7 @@ const BlogGuidance: React.FC = () => {
               className="group relative h-72 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all border border-slate-100 bg-slate-900"
             >
               <img 
-                src={getSmartImage(post.title, post.image)} 
+                src={getSmartImage(post.title, post.featuredImage)} 
                 alt={post.title}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-80"
                 onError={(e) => {

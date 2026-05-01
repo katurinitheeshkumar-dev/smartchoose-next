@@ -289,7 +289,7 @@ export default function JobsPage() {
 
                     <div className="pt-4 flex items-center gap-3">
                       <Link 
-                        to={`/jobs/${job.id}`}
+                        href={`/jobs/${job.id}`}
                         className="flex-1 bg-slate-900 text-white rounded-2xl py-3 text-center font-bold text-sm hover:bg-indigo-600 transition-all active:scale-95 shadow-lg shadow-black/5"
                       >
                         View Details →

@@ -23,6 +23,9 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
   const [isScrolled, setIsScrolled] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+  const lastClickTimeRef = useRef(0);
+  const clickCountRef = useRef(0);
+  const TAP_TIMEOUT = 300;
 
   const isBlogView = pathname.includes('/blog') || pathname.length > 1 && !['/about', '/jobs', '/admin', '/privacy', '/terms', '/disclosure', '/contact', '/returns', '/sitemap'].some(p => pathname.startsWith(p)) && !pathname.startsWith('/product/');
   const isJobView = pathname.startsWith('/jobs');

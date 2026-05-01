@@ -1,8 +1,8 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import type { Product, SocialLink, Settings, Analytics, DatabaseContextType, BlogPost, Job } from '@/types';
+import type { Product, SocialLink, Settings, Analytics, DatabaseContextType, BlogPost, Job, SiteStats } from '@/types';
 import { safeGetItem, safeSetItem, generateId, generateProductUrl, detectEcommercePlatform } from '@/lib/utils';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, increment, getDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, increment, getDoc, getDocs, query, orderBy, limit, where, startAfter } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAdmin } from './AdminContext';
 
@@ -392,7 +392,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     statusFilter: string = 'all'
   ) => {
     try {
-      const { collection, query, where, limit, getDocs, orderBy, startAfter } = await import('firebase/firestore');
+      
       
       let q;
       if (searchTerm) {
@@ -404,15 +404,15 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           limit(pageSize)
         );
       } else {
-        const constraints = [orderBy('createdAt', 'desc'), limit(pageSize)];
+        const constraints: any[] = [orderBy('createdAt', 'desc'), limit(pageSize)];
         if (statusFilter === 'published') constraints.unshift(where('published', '==', true));
         if (lastVisible) constraints.push(startAfter(lastVisible));
         
-        q = query(collection(db, 'products'), ...constraints);
+        q = query(collection(db, 'products'), ...(constraints as any));
       }
 
       const snap = await getDocs(q);
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+      const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as Product));
       const lastDoc = snap.docs[snap.docs.length - 1];
 
       return {
@@ -433,7 +433,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     statusFilter: string = 'all'
   ) => {
     try {
-      const { collection, query, where, limit, getDocs, orderBy, startAfter } = await import('firebase/firestore');
+      
       
       let q;
       if (searchTerm) {
@@ -444,27 +444,27 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           limit(pageSize)
         );
       } else {
-        const constraints = [orderBy('updatedAt', 'desc'), limit(pageSize)];
+        const constraints: any[] = [orderBy('updatedAt', 'desc'), limit(pageSize)];
         if (statusFilter !== 'all') constraints.unshift(where('status', '==', statusFilter));
         if (lastVisible) constraints.push(startAfter(lastVisible));
         
-        q = query(collection(db, 'blogPosts'), ...constraints);
+        q = query(collection(db, 'blogPosts'), ...(constraints as any));
       }
 
       const snap = await getDocs(q);
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
+      const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as BlogPost));
       const lastDoc = snap.docs[snap.docs.length - 1];
 
       return {
         blogs: docs,
         lastVisible: lastDoc,
-        totalCount: siteStats.totalPosts || blogPosts.length
+        totalCount: siteStats.totalBlogs || blogPosts.length
       };
     } catch (e) {
       console.error('Admin fetch blogs failed:', e);
       return { blogs: [], lastVisible: null, totalCount: 0 };
     }
-  }, [siteStats.totalPosts, blogPosts.length]);
+  }, [siteStats.totalBlogs, blogPosts.length]);
 
   const fetchAdminJobs = useCallback(async (
     pageSize: number, 
@@ -473,7 +473,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     statusFilter: string = 'all'
   ) => {
     try {
-      const { collection, query, where, limit, getDocs, orderBy, startAfter } = await import('firebase/firestore');
+      
       
       let q;
       if (searchTerm) {
@@ -484,15 +484,15 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           limit(pageSize)
         );
       } else {
-        const constraints = [orderBy('postedAt', 'desc'), limit(pageSize)];
+        const constraints: any[] = [orderBy('postedAt', 'desc'), limit(pageSize)];
         if (statusFilter !== 'all') constraints.unshift(where('status', '==', statusFilter));
         if (lastVisible) constraints.push(startAfter(lastVisible));
         
-        q = query(collection(db, 'jobs'), ...constraints);
+        q = query(collection(db, 'jobs'), ...(constraints as any));
       }
 
       const snap = await getDocs(q);
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Job));
+      const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as Job));
       const lastDoc = snap.docs[snap.docs.length - 1];
 
       return {

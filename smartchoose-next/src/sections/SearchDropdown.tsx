@@ -37,14 +37,16 @@ export default function SearchDropdown({
       }
       setIsSearching(true);
       try {
-        const { results } = await searchClient.search([
-          {
-            indexName: 'products',
-            query: query,
-            params: { hitsPerPage: 5 }
-          }
-        ]);
-        setAlgoliaProducts(results[0].hits as any[]);
+        const response = await searchClient.search({
+          requests: [
+            {
+              indexName: 'products',
+              query: query,
+              hitsPerPage: 5
+            }
+          ]
+        });
+        setAlgoliaProducts((response.results[0] as any).hits || []);
       } catch (err) {
         console.error('Algolia search error:', err);
       } finally {

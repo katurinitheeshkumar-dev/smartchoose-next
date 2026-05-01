@@ -38,7 +38,7 @@ export default function NotFoundPage() {
             Go Home
           </button>
           <button
-            onClick={() => router.push(-1)}
+            onClick={() => router.back()}
             className="flex-1 bg-white text-slate-900 font-bold py-4 rounded-2xl border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
           >
             <Icon name="arrow-left" size={20} />
