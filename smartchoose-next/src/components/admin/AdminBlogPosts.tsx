@@ -325,7 +325,7 @@ export function AdminBlogPosts() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Icon name="newspaper" size={26} className="text-emerald-500" /> Blog Posts</h1>
-          <p className="text-slate-500 text-sm mt-0.5">High-performance editorial management ({siteStats.totalPosts} total)</p>
+          <p className="text-slate-500 text-sm mt-0.5">High-performance editorial management ({siteStats.totalBlogs} total)</p>
         </div>
         <button onClick={()=>{setEditingPost(null); setView('editor');}} className="px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl shadow-lg">+ New Post</button>
       </div>
