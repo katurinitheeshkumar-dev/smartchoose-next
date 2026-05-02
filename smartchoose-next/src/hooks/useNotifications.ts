@@ -17,7 +17,9 @@ export function useNotifications(topic: NotificationTopic) {
 
   const dismiss = useCallback(() => {
     setIsDismissed(true);
-    localStorage.setItem(`sc_notify_dismissed_${topic}`, 'true');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`sc_notify_dismissed_${topic}`, 'true');
+    }
   }, [topic]);
 
   const checkSubscription = useCallback(async () => {

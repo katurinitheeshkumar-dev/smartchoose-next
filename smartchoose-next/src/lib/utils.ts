@@ -350,8 +350,9 @@ export function generateId(prefix: string = 'sc'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Safe localStorage operations
+// Safe localStorage operations (SSR-safe: guards against server-side rendering)
 export function safeGetItem(key: string, defaultValue: any = null): any {
+  if (typeof window === 'undefined') return defaultValue;
   try {
     const item = localStorage.getItem(key);
     if (!item) return defaultValue;
@@ -363,6 +364,7 @@ export function safeGetItem(key: string, defaultValue: any = null): any {
 }
 
 export function safeSetItem(key: string, value: any): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
@@ -389,6 +391,7 @@ export function safeSetItem(key: string, value: any): boolean {
 }
 
 export function safeRemoveItem(key: string): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     localStorage.removeItem(key);
     return true;
