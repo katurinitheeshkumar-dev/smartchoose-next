@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Icon } from './Icon';
 import { ProductImage } from './ProductImage';
 
@@ -68,9 +69,11 @@ export function ImageSlider({ images, title }: ImageSliderProps) {
                 src={img}
                 alt={`${title} - ${idx + 1}`}
                 className="w-full h-full object-contain"
+                fetchPriority={idx === 0 ? 'high' : 'auto'}
               />
             </div>
           ))}
+
         </div>
 
         {/* Navigation Arrows (Desktop Only) */}
@@ -117,9 +120,11 @@ export function ImageSlider({ images, title }: ImageSliderProps) {
                 activeIndex === idx ? 'border-emerald-500 shadow-md ring-2 ring-emerald-100' : 'border-transparent hover:border-emerald-300'
               }`}
             >
-              <img
-                src={img}
+              <Image
+                src={img.replace('http://', 'https://')}
                 alt={`${title} - Thumbnail ${idx + 1}`}
+                width={80}
+                height={80}
                 className="w-full h-full object-contain p-2"
               />
             </button>
@@ -129,3 +134,4 @@ export function ImageSlider({ images, title }: ImageSliderProps) {
     </div>
   );
 }
+

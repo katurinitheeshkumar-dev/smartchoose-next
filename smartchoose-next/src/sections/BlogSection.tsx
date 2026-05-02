@@ -2,6 +2,7 @@ import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
+import Image from 'next/image';
 
 export function BlogSection() {
   const { blogPosts } = useDatabase();
@@ -50,18 +51,19 @@ export function BlogSection() {
             >
               <div className="aspect-[16/10] bg-emerald-50 relative overflow-hidden">
                 {post.featuredImage ? (
-                  <img
-                    src={post.featuredImage}
+                  <Image
+                    src={post.featuredImage.replace('http://', 'https://')}
                     alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={e => (e.currentTarget.style.display = 'none')}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-emerald-200">
                     <Icon name="newspaper" size={48} />
                   </div>
                 )}
-                <span className="absolute top-4 left-4 px-3 py-1 bg-white/95 backdrop-blur-sm shadow-sm text-emerald-700 text-xs font-bold rounded-full">
+                <span className="absolute top-4 left-4 px-3 py-1 bg-white/95 backdrop-blur-sm shadow-sm text-emerald-700 text-xs font-bold rounded-full z-10">
                   {post.category}
                 </span>
               </div>
@@ -91,3 +93,4 @@ export function BlogSection() {
     </section>
   );
 }
+

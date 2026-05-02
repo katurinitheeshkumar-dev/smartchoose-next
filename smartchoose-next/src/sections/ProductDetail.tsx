@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { m } from 'framer-motion';
+
+
 import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -504,9 +507,11 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
                     className="group bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all"
                   >
                     <div className="aspect-square bg-white relative overflow-hidden">
-                      <img 
-                        src={rp.images?.[0] || 'https://via.placeholder.com/400'} 
+                      <Image 
+                        src={(rp.images?.[0] || 'https://via.placeholder.com/400').replace('http://', 'https://')} 
                         alt={rp.title}
+                        width={400}
+                        height={400}
                         className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
                       />
                       {rp.discount && (

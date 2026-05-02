@@ -54,28 +54,34 @@ export function ProductsSection({
   // and apply search filtering locally on the fetched set.
   // A robust search would use Algolia.
   const filteredProducts = useMemo(() => {
+    // If no search query, just show published products in category
+    if (!searchQuery) {
+      return localProducts.filter(p => p.published && (selectedCategory === 'All' || p.category === selectedCategory));
+    }
+
     const filtered = localProducts.filter(product => {
       const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-      const matchesSearch = !searchQuery ||
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = 
+        product.title.toLowerCase().includes(q) ||
+        product.description.toLowerCase().includes(q) ||
+        product.category.toLowerCase().includes(q);
       return matchesCategory && matchesSearch && product.published;
     });
 
-    if (searchQuery) {
-      filtered.sort((a, b) => {
-        const q = searchQuery.toLowerCase();
-        const aTitle = a.title.toLowerCase().includes(q);
-        const bTitle = b.title.toLowerCase().includes(q);
-        if (aTitle && !bTitle) return -1;
-        if (!aTitle && bTitle) return 1;
-        return 0;
-      });
-    }
+    // Sort by relevance
+    filtered.sort((a, b) => {
+      const q = searchQuery.toLowerCase();
+      const aTitle = a.title.toLowerCase().includes(q);
+      const bTitle = b.title.toLowerCase().includes(q);
+      if (aTitle && !bTitle) return -1;
+      if (!aTitle && bTitle) return 1;
+      return 0;
+    });
 
     return filtered;
   }, [localProducts, selectedCategory, searchQuery]);
+
 
   // Firebase Fetch Function
   const fetchProducts = async (isLoadMore = false) => {
@@ -202,32 +208,17 @@ export function ProductsSection({
     <section id="products-section" className="py-16 bg-slate-50 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest mb-3 border border-emerald-100">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-12 gap-6">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-bold mb-4 uppercase tracking-wider">
               <Icon name="sparkles" size={12} />
               Curated Collection
             </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Featured Deals</h2>
-          </div>
-          
-          {/* Category Filters - Modern Pill Style */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map(category => (
-              <m.button
-                key={category}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-5 py-2.5 rounded-2xl text-sm font-bold transition-all border ${selectedCategory === category
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 border-emerald-600'
-                    : 'bg-white text-slate-500 hover:text-emerald-600 hover:border-emerald-200 border-slate-100 shadow-sm'
-                  }`}
-              >
-                {category}
-              </m.button>
-            ))}
+            <h2 id="products-section" className="text-3xl sm:text-5xl font-black text-slate-900 mb-4 leading-tight tracking-tight">
+              Featured <br className="sm:hidden" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Deals</span>
+            </h2>
           </div>
         </div>
 

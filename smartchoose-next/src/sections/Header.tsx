@@ -22,6 +22,7 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [inputValue, setInputValue] = useState(searchQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const lastClickTimeRef = useRef(0);
   const clickCountRef = useRef(0);
@@ -30,12 +31,17 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
   const isBlogView = pathname.includes('/blog') || pathname.length > 1 && !['/about', '/jobs', '/admin', '/privacy', '/terms', '/disclosure', '/contact', '/returns', '/sitemap'].some(p => pathname.startsWith(p)) && !pathname.startsWith('/product/');
   const isJobView = pathname.startsWith('/jobs');
 
-  // Debounce logic
+  // Debounce logic for the dropdown only
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
+      setDebouncedQuery(inputValue);
     }, 300);
     return () => clearTimeout(timer);
+  }, [inputValue]);
+
+  // Sync inputValue if external searchQuery changes (e.g. cleared from outside)
+  useEffect(() => {
+    setInputValue(searchQuery);
   }, [searchQuery]);
 
   const searchRef = useRef<HTMLDivElement>(null);
@@ -51,9 +57,21 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    setInputValue(e.target.value);
     setShowDropdown(true);
     fetchSearchProducts();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setSearchQuery(inputValue);
+      setShowDropdown(false);
+      // Optional: scroll to products if on home
+      if (pathname === '/') {
+        const el = document.getElementById('products-section');
+        el?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   };
 
   const fetchSearchProducts = async () => {
@@ -61,7 +79,6 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
     try {
       const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
       const { db } = await import('@/lib/firebase');
-      // Fetch a limited set of recent products for basic autocomplete
       const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(100));
       const snap = await getDocs(q);
       const docs = snap.docs.map(d => d.data());
@@ -74,18 +91,29 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
 
   const handleSelect = (id: string, type: 'product' | 'blog' = 'product') => {
     setShowDropdown(false);
+    setInputValue('');
     setSearchQuery('');
     onSearchSelect(id, type);
   };
 
   const handleLogoClick = () => {
-    // Only navigate if not triple-clicking
     const now = Date.now();
     if (now - lastClickTimeRef.current > TAP_TIMEOUT) {
       clickCountRef.current = 0;
     }
     onNavigate('home');
   };
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'glass shadow-lg' : 'bg-transparent'
@@ -125,14 +153,14 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
               <input
                 type="text"
                 placeholder={isBlogView ? "Search articles..." : isJobView ? "Search jobs..." : "Search products..."}
-                value={searchQuery}
+                value={inputValue}
                 onChange={handleSearchChange}
-                onFocus={() => { setShowDropdown(true); fetchSearchProducts(); }}
+                onKeyDown={handleKeyDown}
                 className="w-full pl-12 pr-10 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition-all bg-white/80 backdrop-blur-sm"
               />
-              {searchQuery && (
+              {inputValue && (
                 <button
-                  onClick={() => { setSearchQuery(''); setShowDropdown(false); }}
+                  onClick={() => { setInputValue(''); setSearchQuery(''); }}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
                 >
                   <Icon name="x" size={18} />
@@ -140,19 +168,6 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
               )}
             </div>
 
-            <AnimatePresence>
-              {showDropdown && (
-                <Suspense fallback={null}>
-                  <SearchDropdown
-                    query={debouncedQuery}
-                    products={localSearchProducts}
-                    blogPosts={blogPosts}
-                    onSelect={handleSelect}
-                    priorityView={isBlogView ? 'blog' : 'product'}
-                  />
-                </Suspense>
-              )}
-            </AnimatePresence>
           </div>
 
           {/* Navigation */}
@@ -197,3 +212,4 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
 }
 
 export default Header;
+

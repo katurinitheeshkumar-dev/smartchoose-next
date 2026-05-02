@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
+
+const outfit = Outfit({ 
+  subsets: ["latin"],
+  display: 'swap',
+  variable: '--font-outfit',
+});
 
 export const metadata: Metadata = {
   title: "SmartChoose - Premium Product Discovery",
@@ -13,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-50 flex flex-col">
+    <html lang="en" className={outfit.variable}>
+      <body className={`${outfit.className} min-h-screen bg-slate-50 flex flex-col antialiased`}>
         <ClientLayout>
           {children}
         </ClientLayout>
@@ -22,3 +29,4 @@ export default function RootLayout({
     </html>
   );
 }
+
