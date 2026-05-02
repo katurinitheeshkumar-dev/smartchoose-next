@@ -29,19 +29,41 @@ export function HeroSection() {
       try {
         const { collection, query, orderBy, limit, where, getDocs } = await import('firebase/firestore');
         const { db } = await import('@/lib/firebase');
-        const q = query(
-          collection(db, 'products'),
-          where('published', '==', true),
-          orderBy('createdAt', 'desc'),
-          limit(10)
-        );
-        const snap = await getDocs(q);
-        const docs = snap.docs.map(d => d.data());
-        setTopProducts(docs);
+        
+        let snap;
+        try {
+          // Attempt complex query (requires index)
+          const q = query(
+            collection(db, 'products'),
+            where('published', '==', true),
+            orderBy('createdAt', 'desc'),
+            limit(10)
+          );
+          snap = await getDocs(q);
+        } catch (err: any) {
+          if (err.code === 'failed-precondition') {
+            console.warn('Hero Index missing, falling back to simple query...');
+            // Fallback to simple query without orderBy
+            const q = query(
+              collection(db, 'products'),
+              where('published', '==', true),
+              limit(10)
+            );
+            snap = await getDocs(q);
+          } else {
+            throw err;
+          }
+        }
+        
+        if (snap) {
+          const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setTopProducts(docs);
+        }
       } catch (e) {
         console.error('Error fetching hero products:', e);
       }
     };
+
     fetchHeroProducts();
   }, [products]);
 

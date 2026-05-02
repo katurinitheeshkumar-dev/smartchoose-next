@@ -241,11 +241,48 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
   const recordGlobalStat = useCallback(async (field: keyof SiteStats, val: number = 1) => {
     try {
-      await setDoc(doc(db, 'settings', 'site_stats'), { [field]: increment(val) }, { merge: true });
+      const ref = doc(db, 'settings', 'site_stats');
+      const snap = await getDoc(ref);
+      let currentVal = 0;
+      if (snap.exists()) {
+        currentVal = (snap.data() as any)[field] || 0;
+      }
+      
+      // Prevent negative stats
+      const newVal = Math.max(0, currentVal + val);
+      await setDoc(ref, { [field]: newVal }, { merge: true });
     } catch (e) {
       console.error('Failed to update global stat:', e);
     }
   }, []);
+
+  // Recalculate all stats from scratch (Emergency Repair)
+  const repairStats = useCallback(async () => {
+    try {
+      const productSnap = await getDocs(collection(db, 'products'));
+      const blogSnap = await getDocs(collection(db, 'blogPosts'));
+      const jobSnap = await getDocs(collection(db, 'jobs'));
+      
+      const products = productSnap.docs.map(d => d.data());
+      
+      const newStats: SiteStats = {
+        totalProducts: products.length,
+        totalPublishedProducts: products.filter(p => p.published).length,
+        totalBlogs: blogSnap.size,
+        totalJobs: jobSnap.size,
+        totalClicks: siteStats.totalClicks, // Keep these as they are lifetime
+        totalViews: siteStats.totalViews
+      };
+      
+      await setDoc(doc(db, 'settings', 'site_stats'), newStats);
+      setSiteStats(newStats);
+      return true;
+    } catch (e) {
+      console.error('Repair stats failed:', e);
+      return false;
+    }
+  }, [siteStats]);
+
 
   // Product operations
   const addProduct = useCallback((product: Omit<Product, 'id' | 'clicks' | 'views' | 'createdAt'>): string => {
@@ -718,9 +755,11 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     getProductUrl,
     getProductById,
     getPlatformFromUrl,
+    repairStats,
     fetchAdminProducts,
     fetchAdminBlogs,
     fetchAdminJobs,
+
     blogPosts,
     addBlog,
     updateBlog,

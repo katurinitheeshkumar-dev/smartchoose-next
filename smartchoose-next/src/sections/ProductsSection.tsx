@@ -94,64 +94,62 @@ export function ProductsSection({
 
       let q;
       const baseConstraints = [
-        where('published', '==', true),
-        orderBy('createdAt', 'desc')
+        where('published', '==', true)
       ];
 
-      // If a category is selected and it's not 'All', add a where clause
-      if (selectedCategory !== 'All') {
-        // Note: Firestore requires a composite index if combining where(category) and orderBy(createdAt).
-        // If index doesn't exist, this might fail, so we might need to rely on local filtering 
-        // or just orderBy category first. Assuming index exists for now, or fallback to simple query.
-        q = query(
-          collection(db, 'products'),
-          where('category', '==', selectedCategory),
-          ...baseConstraints,
-          limit(PRODUCTS_PER_PAGE)
-        );
-      } else {
-        q = query(
-          collection(db, 'products'),
-          ...baseConstraints,
-          limit(PRODUCTS_PER_PAGE)
-        );
+      try {
+        // Attempt complex query (requires index)
+        q = query(collection(db, 'products'), ...baseConstraints, orderBy('createdAt', 'desc'), limit(PRODUCTS_PER_PAGE));
+        if (isLoadMore && lastDoc) q = query(q, startAfter(lastDoc));
+        
+        const snapshot = await getDocs(q);
+        processSnapshot(snapshot, isLoadMore);
+      } catch (err: any) {
+        if (err.code === 'failed-precondition' || err.message?.includes('index')) {
+          console.warn('Index missing, falling back to simple query...');
+          // Fallback to simple query without orderBy
+          q = query(collection(db, 'products'), ...baseConstraints, limit(PRODUCTS_PER_PAGE));
+          if (isLoadMore && lastDoc) q = query(q, startAfter(lastDoc));
+          
+          const snapshot = await getDocs(q);
+          processSnapshot(snapshot, isLoadMore);
+        } else {
+          throw err;
+        }
       }
 
-      if (isLoadMore && lastDoc) {
-        q = query(q, startAfter(lastDoc));
-      }
-
-      const snapshot = await getDocs(q);
-      const docs = snapshot.docs.map(doc => doc.data());
-      
-      if (docs.length < PRODUCTS_PER_PAGE) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-
-      if (snapshot.docs.length > 0) {
-        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
-      }
-
-      if (isLoadMore) {
-        setLocalProducts(prev => {
-          // Prevent duplicates
-          const newDocs = docs.filter(d => !prev.find(p => p.id === d.id));
-          return [...prev, ...newDocs];
-        });
-      } else {
-        setLocalProducts(docs);
-      }
     } catch (error) {
       console.error("Error fetching products:", error);
-      // Fallback: If index is missing, remove the category where clause and let local filter handle it
       setHasMore(false);
     } finally {
       setIsBatchLoading(false);
       setIsInitialLoading(false);
     }
   };
+
+  const processSnapshot = (snapshot: any, isLoadMore: boolean) => {
+    const docs = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    
+    if (docs.length < PRODUCTS_PER_PAGE) {
+      setHasMore(false);
+    } else {
+      setHasMore(true);
+    }
+
+    if (snapshot.docs.length > 0) {
+      setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+    }
+
+    if (isLoadMore) {
+      setLocalProducts(prev => {
+        const newDocs = docs.filter((d: any) => !prev.find(p => p.id === d.id));
+        return [...prev, ...newDocs];
+      });
+    } else {
+      setLocalProducts(docs);
+    }
+  };
+
 
   // Initial Load & Category Change
   useEffect(() => {

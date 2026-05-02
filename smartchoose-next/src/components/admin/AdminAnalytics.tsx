@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { Icon } from '@/components/ui/custom/Icon';
@@ -8,9 +8,28 @@ import type { DrillDownType } from './AnalyticsDetailModal';
 import { formatShortTitle } from '@/lib/utils';
 
 export function AdminAnalytics() {
-  const { products, analytics } = useDatabase();
+  const { analytics, siteStats } = useDatabase();
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [drillDownType, setDrillDownType] = useState<DrillDownType>(null);
   const [analyticsProductId, setAnalyticsProductId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      try {
+        const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
+        const { db } = await import('@/lib/firebase');
+        const q = query(collection(db, 'products'), orderBy('clicks', 'desc'), limit(10));
+        const snap = await getDocs(q);
+        setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        console.error('Error fetching analytics products:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTopProducts();
+  }, []);
 
   // Visitors Chart - GREEN theme
   const visitorsOptions: ApexOptions = {
@@ -54,9 +73,9 @@ export function AdminAnalytics() {
   };
   const sourcesSeries = useMemo(() => [{ name: 'Traffic', data: [analytics.trafficSources.direct, analytics.trafficSources.social, analytics.trafficSources.search] }], [analytics]);
 
-  // Calculate stats
-  const totalClicks = products.reduce((sum, p) => sum + p.clicks, 0);
-  const totalViews = products.reduce((sum, p) => sum + p.views, 0);
+  // Calculate stats using siteStats for accurate global numbers
+  const totalClicks = siteStats.totalClicks || 0;
+  const totalViews = siteStats.totalViews || 0;
   const avgCtr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
 
   return (
@@ -170,42 +189,52 @@ export function AdminAnalytics() {
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm">
           <h3 className="text-lg font-bold text-slate-900 mb-4">Product Performance</h3>
           <div className="space-y-3">
-            {products
-              .sort((a, b) => (b.clicks / Math.max(b.views, 1)) - (a.clicks / Math.max(a.views, 1)))
-              .slice(0, 5)
-              .map((product, idx) => {
-                const ctr = ((product.clicks / Math.max(product.views, 1)) * 100);
-                return (
-                  <div
-                    key={product.id}
-                    className="flex items-center gap-4 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => setAnalyticsProductId(product.id)}
-                  >
-                    <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
-                      {idx + 1}
-                    </span>
-                    <img
-                      src={product.images?.[0] || 'https://via.placeholder.com/100'}
-                      alt=""
-                      className="w-10 h-10 rounded-lg object-cover bg-slate-100"
-                    />
-                    <div className="flex-1 min-w-0" title={product.title}>
-                      <p className="font-medium text-slate-900 text-sm truncate">{formatShortTitle(product.title)}</p>
-                      <div className="w-full bg-slate-200 rounded-full h-2 mt-1">
-                        <div
-                          className="bg-gradient-to-r from-emerald-500 to-green-500 h-2 rounded-full transition-all"
-                          style={{ width: `${Math.min(ctr * 5, 100)}%` }}
-                        ></div>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Icon name="loader-2" size={24} className="animate-spin text-emerald-500" />
+              </div>
+            ) : products.length > 0 ? (
+              products
+                .sort((a, b) => (b.clicks / Math.max(b.views, 1)) - (a.clicks / Math.max(a.views, 1)))
+                .slice(0, 5)
+                .map((product, idx) => {
+                  const ctr = ((product.clicks / Math.max(product.views, 1)) * 100);
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex items-center gap-4 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                      onClick={() => setAnalyticsProductId(product.id)}
+                    >
+                      <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                        {idx + 1}
+                      </span>
+                      <img
+                        src={product.images?.[0] || 'https://via.placeholder.com/100'}
+                        alt=""
+                        className="w-10 h-10 rounded-lg object-cover bg-slate-100"
+                      />
+                      <div className="flex-1 min-w-0" title={product.title}>
+                        <p className="font-medium text-slate-900 text-sm truncate">{formatShortTitle(product.title)}</p>
+                        <div className="w-full bg-slate-200 rounded-full h-2 mt-1">
+                          <div
+                            className="bg-gradient-to-r from-emerald-500 to-green-500 h-2 rounded-full transition-all"
+                            style={{ width: `${Math.min(ctr * 5, 100)}%` }}
+                          ></div>
+                        </div>
                       </div>
+                      <span className="font-bold text-slate-900">{ctr.toFixed(1)}%</span>
                     </div>
-                    <span className="font-bold text-slate-900">{ctr.toFixed(1)}%</span>
-                  </div>
-                );
-              })}
+                  );
+                })
+            ) : (
+               <div className="p-8 text-center text-slate-500">
+                <Icon name="package-x" size={48} className="mx-auto mb-4 text-slate-300" />
+                <p>No products yet</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
       {/* Modals */}
       {drillDownType && (
         <AnalyticsDetailModal

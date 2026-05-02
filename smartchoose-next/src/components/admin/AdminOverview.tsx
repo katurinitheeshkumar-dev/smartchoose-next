@@ -10,9 +10,21 @@ import { useRouter } from 'next/navigation';
 import { AdminAgentControl } from './AdminAgentControl';
 
 export function AdminOverview() {
-  const { analytics, siteStats } = useDatabase();
+  const { analytics, siteStats, repairStats } = useDatabase();
   const [drillDownType, setDrillDownType] = useState<DrillDownType>(null);
+  const [isRepairing, setIsRepairing] = useState(false);
   const router = useRouter();
+
+  const handleRepair = async () => {
+    setIsRepairing(true);
+    const success = await repairStats();
+    setIsRepairing(false);
+    if (success) {
+      alert('Stats repaired successfully!');
+    } else {
+      alert('Failed to repair stats.');
+    }
+  };
 
   const totalClicks = siteStats.totalClicks || 0;
   const totalViews = siteStats.totalViews || 0;
@@ -66,10 +78,21 @@ export function AdminOverview() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Dashboard Overview</h1>
-        <p className="text-slate-500">Welcome back! Here's what's happening with your store.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Dashboard Overview</h1>
+          <p className="text-slate-500">Welcome back! Here's what's happening with your store.</p>
+        </div>
+        <button
+          onClick={handleRepair}
+          disabled={isRepairing}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-emerald-200 transition-all shadow-sm disabled:opacity-50"
+        >
+          <Icon name={isRepairing ? "loader-2" : "refresh-cw"} size={16} className={isRepairing ? "animate-spin" : ""} />
+          {isRepairing ? "Repairing..." : "Repair Stats"}
+        </button>
       </div>
+
 
       {/* AI Agent Control - NEW */}
       <AdminAgentControl />

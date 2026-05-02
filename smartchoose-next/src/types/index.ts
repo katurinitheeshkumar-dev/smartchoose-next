@@ -142,7 +142,9 @@ export interface DatabaseContextType {
   deleteSocialLink: (id: string) => void;
   getProductUrl: (productId: string) => string;
   getProductById: (productId: string) => Product | undefined;
+  repairStats: () => Promise<boolean>;
   getPlatformFromUrl: (url: string) => { name: string; icon: string; color: string; className: string };
+
   // Admin Scalability Functions
   fetchAdminProducts: (pageSize: number, lastVisible?: any, searchTerm?: string, statusFilter?: string) => Promise<{ products: Product[], lastVisible: any, totalCount: number }>;
   fetchAdminBlogs: (pageSize: number, lastVisible?: any, searchTerm?: string, statusFilter?: string) => Promise<{ blogs: BlogPost[], lastVisible: any, totalCount: number }>;
