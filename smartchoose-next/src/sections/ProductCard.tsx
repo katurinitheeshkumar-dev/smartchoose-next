@@ -233,28 +233,34 @@ export function ProductCard({ product, highlighted = false, onCopy, onClick }: P
 
 export function ProductSkeleton() {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-pulse">
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-pulse h-full">
       {/* Image Skeleton */}
-      <div className="aspect-square bg-slate-200 w-full" />
+      <div className="aspect-square bg-slate-100 w-full border-b border-slate-50" />
       
       {/* Content Skeleton */}
-      <div className="p-3 sm:p-5 space-y-4 mt-2">
+      <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
         {/* Title Lines */}
         <div className="space-y-2">
-          <div className="h-4 sm:h-5 bg-slate-200 rounded-md w-3/4" />
-          <div className="h-4 sm:h-5 bg-slate-200 rounded-md w-1/2" />
+          <div className="h-4 sm:h-5 bg-slate-100 rounded-md w-full" />
+          <div className="h-4 sm:h-5 bg-slate-100 rounded-md w-2/3" />
         </div>
         
         {/* Rating */}
-        <div className="h-3 bg-slate-200 rounded-md w-1/4 mt-4" />
-        
-        {/* Price Skeleton */}
-        <div className="flex justify-between items-end mt-4">
-          <div className="h-6 sm:h-8 bg-slate-200 rounded-md w-1/3" />
+        <div className="flex items-center gap-2 mb-2">
+          <div className="h-3 bg-slate-100 rounded-md w-12" />
+          <div className="h-3 bg-slate-100 rounded-md w-16 hidden sm:block" />
         </div>
         
-        {/* Button Skeleton */}
-        <div className="h-10 sm:h-12 bg-slate-200 rounded-xl w-full mt-4" />
+        {/* Price & Views */}
+        <div className="flex flex-col gap-2 mt-4">
+          <div className="h-6 sm:h-8 bg-slate-100 rounded-md w-1/2" />
+          <div className="h-3 bg-slate-100 rounded-md w-1/4" />
+        </div>
+        
+        {/* Buttons Skeleton (Match the 1-3 buttons in real card) */}
+        <div className="space-y-2 mt-4 pt-2">
+          <div className="h-10 sm:h-12 bg-slate-100 rounded-xl w-full" />
+        </div>
       </div>
     </div>
   );

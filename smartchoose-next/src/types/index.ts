@@ -141,13 +141,13 @@ export interface DatabaseContextType {
   socialLinks: SocialLink[];
   analytics: Analytics;
   siteStats: SiteStats; // Global aggregated stats
-  updateSettings: (newSettings: Partial<Settings>) => void;
-  addProduct: (product: Omit<Product, 'id' | 'clicks' | 'views' | 'createdAt'>) => string;
-  updateProduct: (id: string, updates: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  duplicateProduct: (id: string) => void;
-  recordClick: (productId: string) => void;
-  recordView: (productId: string) => void;
+  updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id' | 'clicks' | 'views' | 'createdAt'>) => Promise<string>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  duplicateProduct: (id: string) => Promise<void>;
+  recordClick: (productId: string) => Promise<void>;
+  recordView: (productId: string) => Promise<void>;
   addSocialLink: (link: Omit<SocialLink, 'id'>) => void;
   updateSocialLink: (id: string, updates: Partial<SocialLink>) => void;
   deleteSocialLink: (id: string) => void;
@@ -174,8 +174,8 @@ export interface DatabaseContextType {
   deleteJob: (id: string) => Promise<void>;
   broadcastJob: (jobId: string) => Promise<boolean>;
   getJobById: (id: string) => Promise<Job | undefined>;
-  recordJobApply: (jobId: string) => void;
-  recordJobView: (jobId: string) => void;
+  recordJobApply: (jobId: string) => Promise<void>;
+  recordJobView: (jobId: string) => Promise<void>;
   broadcastProduct: (productId: string) => Promise<boolean>;
   broadcastBlog: (blogId: string) => Promise<boolean>;
   // Inbox

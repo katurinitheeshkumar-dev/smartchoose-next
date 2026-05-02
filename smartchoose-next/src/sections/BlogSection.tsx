@@ -4,11 +4,13 @@ import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import Image from 'next/image';
 
-export function BlogSection() {
+export function BlogSection({ initialBlogs = [] }: { initialBlogs?: any[] }) {
   const { blogPosts } = useDatabase();
   const router = useRouter();
 
-  const latestPosts = (blogPosts || [])
+  const postsToUse = initialBlogs.length > 0 ? initialBlogs : blogPosts;
+
+  const latestPosts = (postsToUse || [])
     .filter(b => b.status === 'published')
     .slice(0, 3); // Show top 3
 

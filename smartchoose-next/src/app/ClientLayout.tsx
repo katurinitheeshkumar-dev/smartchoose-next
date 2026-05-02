@@ -9,9 +9,10 @@ import AdminProvider, { useAdmin } from '@/contexts/AdminContext';
 import { SearchProvider, useSearch } from '@/contexts/SearchContext';
 import Header from '@/sections/Header';
 import Footer from '@/sections/Footer';
-import SocialSidebar from '@/components/ui/custom/SocialSidebar';
-import JobNavbar from '@/sections/JobNavbar';
-import AdminLogin from '@/components/admin/AdminLogin';
+import dynamic from 'next/dynamic';
+const SocialSidebar = dynamic(() => import('@/components/ui/custom/SocialSidebar'), { ssr: false });
+const JobNavbar = dynamic(() => import('@/sections/JobNavbar'), { ssr: false });
+const AdminLogin = dynamic(() => import('@/components/admin/AdminLogin'), { ssr: false });
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { settings } = useDatabase();

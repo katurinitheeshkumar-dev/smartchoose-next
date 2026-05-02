@@ -12,76 +12,30 @@ const categories = [
   { id: 'home', name: 'Home', icon: 'home', color: 'text-amber-500', bg: 'bg-amber-50' },
 ];
 
-export function HeroSection() {
-  const { products = [], blogPosts = [] } = useDatabase();
+export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] }) {
+  const { blogPosts = [] } = useDatabase();
   const [currentSlide, setCurrentSlide] = React.useState(0);
   
-  // Get a random, diverse mix of products for the slider on every page load
-  const [topProducts, setTopProducts] = React.useState<any[]>([]);
-
-  React.useEffect(() => {
-    if (products && products.length > 0) {
-      setTopProducts([...products].filter(p => p && p.published).sort(() => 0.5 - Math.random()).slice(0, 10));
-      return;
-    }
-
-    const fetchHeroProducts = async () => {
-      try {
-        const { collection, query, orderBy, limit, where, getDocs } = await import('firebase/firestore');
-        const { db } = await import('@/lib/firebase');
-        
-        let snap;
-        try {
-          // Attempt complex query (requires index)
-          const q = query(
-            collection(db, 'products'),
-            where('published', '==', true),
-            orderBy('createdAt', 'desc'),
-            limit(10)
-          );
-          snap = await getDocs(q);
-        } catch (err: any) {
-          if (err.code === 'failed-precondition') {
-            console.warn('Hero Index missing, falling back to simple query...');
-            // Fallback to simple query without orderBy
-            const q = query(
-              collection(db, 'products'),
-              where('published', '==', true),
-              limit(10)
-            );
-            snap = await getDocs(q);
-          } else {
-            throw err;
-          }
-        }
-        
-        if (snap) {
-          const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          setTopProducts(docs);
-        }
-      } catch (e) {
-        console.error('Error fetching hero products:', e);
-      }
-    };
-
-    fetchHeroProducts();
-  }, [products]);
+  // Use initial products from server
+  const [topProducts, setTopProducts] = React.useState<any[]>(initialProducts);
 
   // Get latest blog post
-  const latestBlog = [...(blogPosts || [])]
-    .filter(b => b && b.status === 'published')
-    .sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    })[0];
+  const latestBlog = React.useMemo(() => {
+    return [...(blogPosts || [])]
+      .filter(b => b && b.status === 'published')
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      })[0];
+  }, [blogPosts]);
 
   // Auto-slide carousel
   React.useEffect(() => {
     if (topProducts.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % topProducts.length);
-    }, 4000); 
+    }, 5000); 
     return () => clearInterval(timer);
   }, [topProducts.length]);
 
@@ -213,7 +167,7 @@ export function HeroSection() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="grid grid-cols-12 grid-rows-12 gap-3 sm:gap-4 h-[420px] sm:h-[600px]"
             >
-              <div className="col-span-12 row-span-8 sm:row-span-9 bg-white rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden group relative">
+              <div className="col-span-12 row-span-8 sm:row-span-9 bg-white rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden group relative min-h-[300px] sm:min-h-[450px]">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {topProducts.length > 0 ? (
                     <m.div
@@ -228,14 +182,14 @@ export function HeroSection() {
                       className="absolute inset-0 cursor-pointer"
                       onClick={() => window.open(`/product/${topProducts[currentSlide].id}`, '_self')}
                     >
-                      <div className="absolute inset-0 p-4 sm:p-8 flex items-center justify-center bg-white pb-24 sm:pb-32">
+                      <div className="absolute inset-0 p-4 sm:p-8 flex items-center justify-center bg-white pb-24 sm:pb-32 aspect-square">
                         <Image 
                           src={getProductImage(topProducts[currentSlide].images)} 
                           alt={topProducts[currentSlide].title}
-                          width={800}
-                          height={800}
-                          priority={currentSlide === 0}
-                          className="max-w-[120%] max-h-[120%] object-contain transition-transform duration-1000 group-hover:scale-105" 
+                          width={600}
+                          height={600}
+                          priority={true}
+                          className="max-w-full max-h-full object-contain transition-transform duration-1000 group-hover:scale-105" 
                         />
                       </div>
 

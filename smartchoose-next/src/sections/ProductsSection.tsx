@@ -29,16 +29,17 @@ const CATEGORIES = [
 const PRODUCTS_PER_PAGE = 12;
 
 export function ProductsSection({
+  initialProducts = [],
   searchQuery,
   highlightedProduct,
   onProductClick
-}: ProductsSectionProps) {
+}: ProductsSectionProps & { initialProducts?: any[] }) {
   // We still need useDatabase for some context, but we will manage products locally
   const { isProductsLoading: contextLoading } = useDatabase();
-  const [localProducts, setLocalProducts] = useState<any[]>([]);
+  const [localProducts, setLocalProducts] = useState<any[]>(initialProducts);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isBatchLoading, setIsBatchLoading] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(initialProducts.length === 0);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [toast, setToast] = useState({ show: false, message: '' });
@@ -48,13 +49,7 @@ export function ProductsSection({
 
   const categories = CATEGORIES;
 
-  // Filter products client-side for search if it's already loaded,
-  // but true pagination requires a server-side query.
-  // For this version, we will fetch base paginated products from Firebase,
-  // and apply search filtering locally on the fetched set.
-  // A robust search would use Algolia.
   const filteredProducts = useMemo(() => {
-    // If no search query, just show published products in category
     if (!searchQuery) {
       return localProducts.filter(p => p.published && (selectedCategory === 'All' || p.category === selectedCategory));
     }
@@ -69,7 +64,6 @@ export function ProductsSection({
       return matchesCategory && matchesSearch && product.published;
     });
 
-    // Sort by relevance
     filtered.sort((a, b) => {
       const q = searchQuery.toLowerCase();
       const aTitle = a.title.toLowerCase().includes(q);
@@ -82,12 +76,11 @@ export function ProductsSection({
     return filtered;
   }, [localProducts, selectedCategory, searchQuery]);
 
-
   // Firebase Fetch Function
   const fetchProducts = async (isLoadMore = false) => {
     try {
       if (isLoadMore) setIsBatchLoading(true);
-      else setIsInitialLoading(true);
+      else if (localProducts.length === 0) setIsInitialLoading(true);
 
       const { collection, query, orderBy, limit, startAfter, where, getDocs } = await import('firebase/firestore');
       const { db } = await import('@/lib/firebase');
@@ -151,8 +144,10 @@ export function ProductsSection({
   };
 
 
-  // Initial Load & Category Change
+  // Category Change (Reset)
   useEffect(() => {
+    if (selectedCategory === 'All' && localProducts.length > 0 && initialProducts.length > 0) return; // Skip first load if we have server data
+    
     setLocalProducts([]);
     setLastDoc(null);
     setHasMore(true);

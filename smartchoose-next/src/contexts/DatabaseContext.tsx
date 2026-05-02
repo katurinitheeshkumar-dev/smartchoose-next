@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import type { Product, SocialLink, Settings, Analytics, DatabaseContextType, BlogPost, Job, SiteStats, Inquiry } from '@/types';
 import { safeGetItem, safeSetItem, generateId, generateProductUrl, detectEcommercePlatform } from '@/lib/utils';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, increment, getDoc, getDocs, query, orderBy, limit, where, startAfter } from 'firebase/firestore';
+import { onSnapshot, doc, increment, getDoc, getDocs, query, orderBy, limit, where, startAfter, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAdmin } from './AdminContext';
 
@@ -177,7 +177,9 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           trafficSources: data.trafficSources || { direct: 0, social: 0, search: 0 }
         });
       } else {
-        setDoc(doc(db, 'settings', 'global_analytics'), defaultAnalytics);
+        import('firebase/firestore').then(({ setDoc, doc }) => {
+          setDoc(doc(db, 'settings', 'global_analytics'), defaultAnalytics);
+        });
         setAnalytics(defaultAnalytics);
       }
     });
@@ -197,7 +199,8 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
             visitors = [...(currentData.dailyVisitors || defaultAnalytics.dailyVisitors)];
           }
           visitors[visitors.length - 1] = (visitors[visitors.length - 1] || 0) + 1;
-          setDoc(ref, {
+          const { setDoc: setDocDyn } = await import('firebase/firestore');
+          await setDocDyn(ref, {
             ...currentData,
             dailyVisitors: visitors
           }, { merge: true });
@@ -220,6 +223,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   // Settings updater - PERSISTS TO FIREBASE
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     try {
+      const { setDoc, doc } = await import('firebase/firestore');
       await setDoc(doc(db, 'settings', 'site_settings'), newSettings, { merge: true });
     } catch (e) {
       console.error("Failed to update settings in Firestore:", e);
@@ -250,6 +254,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
       
       // Prevent negative stats
       const newVal = Math.max(0, currentVal + val);
+      const { setDoc } = await import('firebase/firestore');
       await setDoc(ref, { [field]: newVal }, { merge: true });
     } catch (e) {
       console.error('Failed to update global stat:', e);
@@ -258,6 +263,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
   // Recalculate all stats from scratch (Emergency Repair)
   const repairStats = useCallback(async () => {
+    const { collection, getDocs, doc, setDoc } = await import('firebase/firestore');
     try {
       const productSnap = await getDocs(collection(db, 'products'));
       const blogSnap = await getDocs(collection(db, 'blogPosts'));
@@ -285,7 +291,8 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
 
   // Product operations
-  const addProduct = useCallback((product: Omit<Product, 'id' | 'clicks' | 'views' | 'createdAt'>): string => {
+  const addProduct = useCallback(async (product: Omit<Product, 'id' | 'clicks' | 'views' | 'createdAt'>): Promise<string> => {
+    const { doc, setDoc } = await import('firebase/firestore');
     const newProduct: Product = {
       ...product,
       id: generateId('sc'),
@@ -293,7 +300,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
       views: 0,
       createdAt: new Date().toISOString(),
     };
-    setDoc(doc(db, 'products', newProduct.id), newProduct);
+    await setDoc(doc(db, 'products', newProduct.id), newProduct);
     
     // Update Global Aggregates
     recordGlobalStat('totalProducts', 1);
@@ -303,16 +310,18 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     return newProduct.id;
   }, [syncAlgolia, recordGlobalStat]);
 
-  const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
+  const updateProduct = useCallback(async (id: string, updates: Partial<Product>) => {
+    const { doc, setDoc } = await import('firebase/firestore');
     const product = products.find(p => p.id === id);
     if (product) {
       const updatedProduct = { ...product, ...updates };
-      setDoc(doc(db, 'products', id), updatedProduct, { merge: true });
+      await setDoc(doc(db, 'products', id), updatedProduct, { merge: true });
       syncAlgolia('sync_single', { product: updatedProduct });
     }
   }, [products, syncAlgolia]);
 
   const deleteProduct = useCallback(async (id: string) => {
+    const { doc, getDoc, deleteDoc } = await import('firebase/firestore');
     // We need to check if it was published before deleting to update stats
     try {
       const snap = await getDoc(doc(db, 'products', id));
@@ -328,7 +337,8 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, [syncAlgolia, recordGlobalStat]);
 
-  const duplicateProduct = useCallback((id: string) => {
+  const duplicateProduct = useCallback(async (id: string) => {
+    const { doc, setDoc } = await import('firebase/firestore');
     const product = products.find(p => p.id === id);
     if (product) {
       const duplicated: Product = {
@@ -340,8 +350,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
         published: false
       };
-      // Fix: persist duplicate to Firebase (was missing before)
-      setDoc(doc(db, 'products', duplicated.id), duplicated);
+      await setDoc(doc(db, 'products', duplicated.id), duplicated);
       syncAlgolia('sync_single', { product: duplicated });
     }
   }, [products, syncAlgolia]);
@@ -356,24 +365,24 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Analytics operations
-  const recordClick = useCallback((productId: string) => {
+  const recordClick = useCallback(async (productId: string) => {
     if (productId) {
+      const { doc, setDoc, increment, getDoc } = await import('firebase/firestore');
       try {
         const productRef = doc(db, 'products', productId);
-        setDoc(productRef, { clicks: increment(1) }, { merge: true });
+        await setDoc(productRef, { clicks: increment(1) }, { merge: true });
 
         // Update global analytics clicks (Last 30 days)
         const globalRef = doc(db, 'settings', 'global_analytics');
-        getDoc(globalRef).then(snap => {
-          let clicks = [...defaultAnalytics.dailyClicks];
-          let currentData = defaultAnalytics;
-          if (snap.exists()) {
-            currentData = snap.data() as Analytics;
-            clicks = [...(currentData.dailyClicks || defaultAnalytics.dailyClicks)];
-          }
-          clicks[clicks.length - 1] = (clicks[clicks.length - 1] || 0) + 1;
-          setDoc(globalRef, { ...currentData, dailyClicks: clicks }, { merge: true });
-        });
+        const snap = await getDoc(globalRef);
+        let clicks = [...defaultAnalytics.dailyClicks];
+        let currentData = defaultAnalytics;
+        if (snap.exists()) {
+          currentData = snap.data() as Analytics;
+          clicks = [...(currentData.dailyClicks || defaultAnalytics.dailyClicks)];
+        }
+        clicks[clicks.length - 1] = (clicks[clicks.length - 1] || 0) + 1;
+        await setDoc(globalRef, { ...currentData, dailyClicks: clicks }, { merge: true });
 
         // Update site-wide lifetime clicks
         recordGlobalStat('totalClicks', 1);
@@ -383,7 +392,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, [recordGlobalStat]);
 
-  const recordView = useCallback((productId: string) => {
+  const recordView = useCallback(async (productId: string) => {
     if (productId) {
       // Track session view to avoid counting multiple times per session
       const viewedProducts = safeGetItem('sc_viewed_products', []);
@@ -391,9 +400,10 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         viewedProducts.push(productId);
         safeSetItem('sc_viewed_products', viewedProducts);
 
+        const { doc, setDoc, increment } = await import('firebase/firestore');
         try {
           const productRef = doc(db, 'products', productId);
-          setDoc(productRef, { views: increment(1) }, { merge: true });
+          await setDoc(productRef, { views: increment(1) }, { merge: true });
           
           // Update site-wide lifetime views
           recordGlobalStat('totalViews', 1);
@@ -550,6 +560,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
   // ---- BLOG MANAGEMENT ----
   const addBlog = useCallback(async (blog: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+    const { doc, setDoc } = await import('firebase/firestore');
     const now = new Date().toISOString();
     const newBlog: BlogPost = {
       ...blog,
@@ -563,10 +574,12 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   }, [recordGlobalStat]);
 
   const updateBlog = useCallback(async (id: string, updates: Partial<BlogPost>): Promise<void> => {
+    const { doc, setDoc } = await import('firebase/firestore');
     await setDoc(doc(db, 'blogPosts', id), { ...updates, updatedAt: new Date().toISOString() }, { merge: true });
   }, []);
 
   const deleteBlog = useCallback(async (id: string): Promise<void> => {
+    const { doc, deleteDoc } = await import('firebase/firestore');
     await deleteDoc(doc(db, 'blogPosts', id));
     recordGlobalStat('totalBlogs', -1);
   }, [recordGlobalStat]);
@@ -578,6 +591,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
   // ---- JOB MANAGEMENT ----
   const addJob = useCallback(async (job: Omit<Job, 'id' | 'postedAt' | 'views'>): Promise<string> => {
+    const { doc, setDoc } = await import('firebase/firestore');
     const newJob: Job = {
       ...job,
       id: generateId('job'),
@@ -591,10 +605,12 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   }, [recordGlobalStat]);
 
   const updateJob = useCallback(async (id: string, updates: Partial<Job>): Promise<void> => {
+    const { doc, setDoc } = await import('firebase/firestore');
     await setDoc(doc(db, 'jobs', id), updates, { merge: true });
   }, []);
 
   const deleteJob = useCallback(async (id: string): Promise<void> => {
+    const { doc, deleteDoc } = await import('firebase/firestore');
     await deleteDoc(doc(db, 'jobs', id));
     recordGlobalStat('totalJobs', -1);
   }, [recordGlobalStat]);
@@ -605,6 +621,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     if (local) return local;
 
     // Fetch from Firebase directly for fast individual page loads
+    const { doc, getDoc } = await import('firebase/firestore');
     try {
       const snap = await getDoc(doc(db, 'jobs', jobId));
       if (snap.exists()) {
@@ -709,14 +726,15 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings, updateBlog]);
 
-  const recordJobApply = useCallback((jobId: string) => {
+  const recordJobApply = useCallback(async (jobId: string) => {
     const job = jobs.find(j => j.id === jobId);
     if (job) {
-      setDoc(doc(db, 'jobs', jobId), { applies: increment(1) }, { merge: true });
+      const { setDoc, doc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'jobs', jobId), { applies: increment(1) }, { merge: true });
     }
   }, [jobs]);
 
-  const recordJobView = useCallback((jobId: string) => {
+  const recordJobView = useCallback(async (jobId: string) => {
     if (jobId) {
       // Track session view to avoid counting multiple times per session
       const viewedJobs = safeGetItem('sc_viewed_jobs', []);
@@ -725,8 +743,9 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         safeSetItem('sc_viewed_jobs', viewedJobs);
 
         try {
+          const { setDoc, doc } = await import('firebase/firestore');
           const jobRef = doc(db, 'jobs', jobId);
-          setDoc(jobRef, { views: increment(1) }, { merge: true });
+          await setDoc(jobRef, { views: increment(1) }, { merge: true });
         } catch (e) {
           console.error("Failed to record job view", e);
         }
@@ -743,6 +762,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
       status: 'new',
       createdAt: new Date().toISOString()
     };
+    const { setDoc, doc } = await import('firebase/firestore');
     await setDoc(doc(db, 'inquiries', id), newInquiry);
   }, []);
 
@@ -753,10 +773,12 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateInquiryStatus = useCallback(async (id: string, status: Inquiry['status']) => {
+    const { setDoc, doc } = await import('firebase/firestore');
     await setDoc(doc(db, 'inquiries', id), { status }, { merge: true });
   }, []);
 
   const deleteInquiry = useCallback(async (id: string) => {
+    const { deleteDoc, doc } = await import('firebase/firestore');
     await deleteDoc(doc(db, 'inquiries', id));
   }, []);
 

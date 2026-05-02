@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { useAdmin } from '@/contexts/AdminContext';
+import Image from 'next/image';
 
 const SearchDropdown = lazy(() => import('./SearchDropdown'));
 
@@ -129,19 +130,17 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
           >
             <a 
               href="/"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white flex items-center justify-center shadow-md border border-slate-100 overflow-hidden shrink-0"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white flex items-center justify-center shadow-md border border-slate-100 overflow-hidden shrink-0 relative"
               onClick={(e) => { e.preventDefault(); handleLogoClick(); }}
               aria-label="SmartChoose Home"
             >
-              <img 
+              <Image 
                 src={settings.logo && settings.logo !== '/logo.png' ? settings.logo : '/logo.png'} 
                 alt={settings.siteName} 
                 className="w-full h-full object-contain p-1" 
-                width="56"
-                height="56"
-                style={{ aspectRatio: '1/1' }}
-                decoding="async"
-                fetchPriority="high"
+                width={56}
+                height={56}
+                priority={true}
               />
             </a>
           </m.div>
