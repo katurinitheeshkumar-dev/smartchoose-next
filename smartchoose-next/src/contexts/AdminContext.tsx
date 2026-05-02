@@ -96,10 +96,17 @@ export default function AdminProvider({ children }: { children: React.ReactNode 
     return () => clearTimeout(timer);
   }, [showLogin]);
 
-  // Keyboard shortcut: Ctrl+Shift+A
+  // Keyboard shortcut: Ctrl+Shift+A & Activation link handler
   useEffect(() => {
     const isAdminUnlocked = localStorage.getItem('sc_admin_unlocked') === 'true';
     if (!isAdminUnlocked) return;
+
+    // Check for activation link flag
+    const shouldShowLogin = sessionStorage.getItem('sc_show_admin_login') === 'true';
+    if (shouldShowLogin) {
+      sessionStorage.removeItem('sc_show_admin_login');
+      setShowLogin(true);
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
