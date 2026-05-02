@@ -9,6 +9,7 @@ import { AdminSocial } from './AdminSocial';
 import { AdminSettings } from './AdminSettings';
 import { AdminBlogPosts } from './AdminBlogPosts';
 import { AdminJobs } from './AdminJobs';
+import { AdminInbox } from './AdminInbox';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -119,6 +120,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     { id: 'products', label: 'Products', icon: 'package' },
     { id: 'blog', label: 'Blog Posts', icon: 'newspaper' },
     { id: 'jobs', label: 'Job Alerts', icon: 'briefcase' },
+    { id: 'inbox', label: 'Inquiry Inbox', icon: 'inbox' },
     { id: 'analytics', label: 'Analytics', icon: 'bar-chart-3' },
     { id: 'social', label: 'Social Media', icon: 'share-2' },
     { id: 'settings', label: 'Settings', icon: 'settings' }
@@ -286,7 +288,19 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative">
           <div className="max-w-7xl mx-auto w-full">
-            {(() => { switch(activeTab) { case 'overview': return <AdminOverview />; case 'products': return <AdminProducts />; case 'blog': return <AdminBlogPosts />; case 'jobs': return <AdminJobs />; case 'analytics': return <AdminAnalytics />; case 'social': return <AdminSocial />; case 'settings': return <AdminSettings />; default: return <AdminOverview />; } })()}
+            {(() => {
+              switch(activeTab) {
+                case 'overview': return <AdminOverview />;
+                case 'products': return <AdminProducts />;
+                case 'blog': return <AdminBlogPosts />;
+                case 'jobs': return <AdminJobs />;
+                case 'inbox': return <AdminInbox />;
+                case 'analytics': return <AdminAnalytics />;
+                case 'social': return <AdminSocial />;
+                case 'settings': return <AdminSettings />;
+                default: return <AdminOverview />;
+              }
+            })()}
           </div>
         </div>
       </main>

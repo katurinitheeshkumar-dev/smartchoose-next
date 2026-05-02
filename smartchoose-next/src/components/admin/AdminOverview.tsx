@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { m } from 'framer-motion';
 import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { AdminAgentControl } from './AdminAgentControl';
 
 export function AdminOverview() {
-  const { analytics, siteStats, repairStats } = useDatabase();
+  const { analytics, siteStats, repairStats, fetchInquiries } = useDatabase();
   const [drillDownType, setDrillDownType] = useState<DrillDownType>(null);
   const [isRepairing, setIsRepairing] = useState(false);
   const router = useRouter();
@@ -40,6 +40,14 @@ export function AdminOverview() {
   // Get top category
   const topCategory = ['Other', 0];
 
+  const [newMessages, setNewMessages] = useState(0);
+
+  useEffect(() => {
+    fetchInquiries().then(data => {
+      setNewMessages(data.filter(m => m.status === 'new').length);
+    });
+  }, [fetchInquiries]);
+
   const stats = [
     {
       id: 'products',
@@ -50,12 +58,12 @@ export function AdminOverview() {
       trend: '+12%'
     },
     {
-      id: 'published',
-      label: 'Published',
-      value: publishedCount,
-      icon: 'check-circle',
-      color: 'green',
-      trend: '+5%'
+      id: 'inbox',
+      label: 'New Messages',
+      value: newMessages,
+      icon: 'inbox',
+      color: newMessages > 0 ? 'blue' : 'slate',
+      trend: newMessages > 0 ? 'URGENT' : 'CLEAR'
     },
     {
       id: 'clicks',
@@ -110,8 +118,8 @@ export function AdminOverview() {
                 setDrillDownType(stat.id as DrillDownType);
               } else if (stat.id === 'products') {
                 router.push('/admin/products');
-              } else if (stat.id === 'published') {
-                router.push('/admin/products?filter=published');
+              } else if (stat.id === 'inbox') {
+                router.push('/admin/inbox');
               }
             }}
             className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 transition-all cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-emerald-200"

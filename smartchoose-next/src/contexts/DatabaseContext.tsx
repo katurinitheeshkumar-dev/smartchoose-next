@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import type { Product, SocialLink, Settings, Analytics, DatabaseContextType, BlogPost, Job, SiteStats } from '@/types';
+import type { Product, SocialLink, Settings, Analytics, DatabaseContextType, BlogPost, Job, SiteStats, Inquiry } from '@/types';
 import { safeGetItem, safeSetItem, generateId, generateProductUrl, detectEcommercePlatform } from '@/lib/utils';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, increment, getDoc, getDocs, query, orderBy, limit, where, startAfter } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -734,6 +734,32 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // ---- INBOX MANAGEMENT ----
+  const addInquiry = useCallback(async (inquiry: Omit<Inquiry, 'id' | 'status' | 'createdAt'>) => {
+    const id = generateId('msg');
+    const newInquiry: Inquiry = {
+      ...inquiry,
+      id,
+      status: 'new',
+      createdAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, 'inquiries', id), newInquiry);
+  }, []);
+
+  const fetchInquiries = useCallback(async () => {
+    const q = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry));
+  }, []);
+
+  const updateInquiryStatus = useCallback(async (id: string, status: Inquiry['status']) => {
+    await setDoc(doc(db, 'inquiries', id), { status }, { merge: true });
+  }, []);
+
+  const deleteInquiry = useCallback(async (id: string) => {
+    await deleteDoc(doc(db, 'inquiries', id));
+  }, []);
+
   const value = useMemo(() => ({
     settings,
     products,
@@ -776,7 +802,12 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     broadcastJob,
     broadcastProduct,
     broadcastBlog,
-  }), [settings, products, socialLinks, analytics, siteStats, isInitialLoading, updateSettings, addProduct, updateProduct, deleteProduct, duplicateProduct, recordClick, recordView, addSocialLink, updateSocialLink, deleteSocialLink, getProductUrl, getProductById, getPlatformFromUrl, fetchAdminProducts, fetchAdminBlogs, fetchAdminJobs, blogPosts, addBlog, updateBlog, deleteBlog, getBlogBySlug, jobs, isJobsLoading, addJob, updateJob, deleteJob, broadcastJob, recordJobApply, recordJobView, broadcastProduct, broadcastBlog]);
+
+    addInquiry,
+    fetchInquiries,
+    updateInquiryStatus,
+    deleteInquiry,
+  }), [settings, products, socialLinks, analytics, siteStats, isInitialLoading, updateSettings, addProduct, updateProduct, deleteProduct, duplicateProduct, recordClick, recordView, addSocialLink, updateSocialLink, deleteSocialLink, getProductUrl, getProductById, getPlatformFromUrl, fetchAdminProducts, fetchAdminBlogs, fetchAdminJobs, blogPosts, addBlog, updateBlog, deleteBlog, getBlogBySlug, jobs, isJobsLoading, addJob, updateJob, deleteJob, broadcastJob, recordJobApply, recordJobView, broadcastProduct, broadcastBlog, addInquiry, fetchInquiries, updateInquiryStatus, deleteInquiry]);
 
   return (
     <DatabaseContext.Provider value={value}>

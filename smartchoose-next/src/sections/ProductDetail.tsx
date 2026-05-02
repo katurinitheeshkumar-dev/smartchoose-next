@@ -432,28 +432,47 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
           </m.div>
         )}
 
-        {/* Pros Only - Cons Removed */}
-        {product.pros && product.pros.length > 0 && (
+        {/* Pros & Cons */}
+        {( (product.pros && product.pros.length > 0) || (product.cons && product.cons.length > 0) ) && (
           <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-12"
+            className="mt-12 grid md:grid-cols-2 gap-6"
           >
-            <div className="bg-emerald-50 rounded-2xl p-6 max-w-2xl">
-              <h3 className="font-bold text-emerald-900 mb-4 flex items-center gap-2">
-                <Icon name="thumbs-up" size={20} />
-                Why You'll Love It
-              </h3>
-              <ul className="space-y-2">
-                {product.pros.map((pro: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2 text-emerald-800">
-                    <Icon name="check" size={16} className="mt-1 flex-shrink-0" />
-                    {pro}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {product.pros && product.pros.length > 0 && (
+              <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
+                <h3 className="font-bold text-emerald-900 mb-4 flex items-center gap-2">
+                  <Icon name="thumbs-up" size={20} className="text-emerald-600" />
+                  Pros
+                </h3>
+                <ul className="space-y-2">
+                  {product.pros.map((pro: string, idx: number) => (
+                    <li key={idx} className="flex items-start gap-2 text-emerald-800 text-sm font-medium">
+                      <Icon name="check" size={16} className="mt-0.5 flex-shrink-0" />
+                      {pro}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {product.cons && product.cons.length > 0 && (
+              <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+                <h3 className="font-bold text-red-900 mb-4 flex items-center gap-2">
+                  <Icon name="thumbs-down" size={20} className="text-red-600" />
+                  Cons
+                </h3>
+                <ul className="space-y-2">
+                  {product.cons.map((con: string, idx: number) => (
+                    <li key={idx} className="flex items-start gap-2 text-red-800 text-sm font-medium">
+                      <Icon name="x" size={16} className="mt-0.5 flex-shrink-0" />
+                      {con}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </m.div>
         )}
 

@@ -97,6 +97,17 @@ export interface Analytics {
   };
 }
 
+// Inquiry Types
+export interface Inquiry {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'new' | 'read' | 'replied';
+  createdAt: string;
+}
+
 // Admin Context Types
 export interface AdminContextType {
   isAdmin: boolean;
@@ -167,6 +178,11 @@ export interface DatabaseContextType {
   recordJobView: (jobId: string) => void;
   broadcastProduct: (productId: string) => Promise<boolean>;
   broadcastBlog: (blogId: string) => Promise<boolean>;
+  // Inbox
+  addInquiry: (inquiry: Omit<Inquiry, 'id' | 'status' | 'createdAt'>) => Promise<void>;
+  fetchInquiries: () => Promise<Inquiry[]>;
+  updateInquiryStatus: (id: string, status: Inquiry['status']) => Promise<void>;
+  deleteInquiry: (id: string) => Promise<void>;
 }
 
 // Blog Types

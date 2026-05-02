@@ -523,9 +523,54 @@ export function AdminSettings() {
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <Icon name="zap" size={20} className="text-amber-500" />
+            Automation & Autopilot
+          </h2>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+              <div>
+                <p className="font-bold text-slate-900">Autopilot Mode</p>
+                <p className="text-sm text-slate-500">Automatically sync prices and post trending deals to social media.</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={formData.autopilotEnabled || false}
+                  onChange={(e) => setFormData({ ...formData, autopilotEnabled: e.target.checked })}
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            {formData.autopilotEnabled && (
+              <div className="grid md:grid-cols-2 gap-6 p-4 border border-emerald-100 rounded-xl bg-emerald-50/20">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Last Auto Sync</label>
+                  <p className="text-sm font-mono text-slate-600">{formData.lastAutoPost || 'Never'}</p>
+                </div>
+                <div>
+                   <label className="block text-sm font-medium text-slate-700 mb-2">Auto-Post Status</label>
+                   <p className="text-sm text-slate-600">{formData.lastAutoPostLog?.window || 'Idle'}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 bg-amber-50 rounded-xl">
+              <p className="text-sm text-amber-700 flex items-start gap-2">
+                <Icon name="info" size={16} className="mt-0.5 flex-shrink-0" />
+                <span>Autopilot uses our serverless cron jobs to monitor price drops and notify your followers instantly.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
             <Icon name="shield" size={20} className="text-amber-600" />
             Security
           </h2>
+
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
             <div>
               <p className="font-medium text-slate-900">Admin Account</p>

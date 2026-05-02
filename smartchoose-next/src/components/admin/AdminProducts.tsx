@@ -31,6 +31,11 @@ interface ProductFormData {
   features: string[];
   specifications: Record<string, string>;
   pros: string[];
+  cons: string[];
+  seoTitle: string;
+  seoDescription: string;
+  trending: boolean;
+  bestseller: boolean;
 }
 
 const initialFormData: ProductFormData = {
@@ -40,7 +45,7 @@ const initialFormData: ProductFormData = {
   price: '',
   originalPrice: '',
   discount: '',
-  category: '',
+  category: 'Electronics',
   affiliateLink: '',
   affiliateLinks: [{ url: '', platform: 'Store', icon: 'generic.svg', price: '' }],
   images: [],
@@ -51,7 +56,12 @@ const initialFormData: ProductFormData = {
   platform: 'Store',
   features: [],
   specifications: {},
-  pros: []
+  pros: [],
+  cons: [],
+  seoTitle: '',
+  seoDescription: '',
+  trending: false,
+  bestseller: false
 };
 
 export function AdminProducts() {
@@ -77,8 +87,42 @@ export function AdminProducts() {
   const [isFetching, setIsFetching] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState<string | null>(null);
   const [analyticsProductId, setAnalyticsProductId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const PAGE_SIZE = 20;
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === localProducts.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(localProducts.map(p => p.id));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedIds.length} products forever?`)) return;
+    setToast({ show: true, message: `Deleting ${selectedIds.length} products...`, type: 'info' });
+    for (const id of selectedIds) {
+      await deleteProduct(id);
+    }
+    setSelectedIds([]);
+    setToast({ show: true, message: 'Bulk delete successful', type: 'success' });
+    loadProducts(currentPage);
+  };
+
+  const handleBulkBroadcast = async () => {
+    setToast({ show: true, message: `Broadcasting ${selectedIds.length} products...`, type: 'info' });
+    for (const id of selectedIds) {
+      await broadcastProduct(id);
+    }
+    setSelectedIds([]);
+    setToast({ show: true, message: 'Bulk broadcast finished', type: 'success' });
+  };
+
 
   const categories = ['Electronics', 'Smartphones', 'Audio', 'Wearables', 'Laptops', 'Tablets', 'Cameras', 'TVs & Displays', 'Gaming & Accessories', 'Accessories', 'Kitchen', 'Home Appliances', 'Other'];
 
@@ -142,6 +186,7 @@ export function AdminProducts() {
     setEditingProduct(null);
     setFormData(initialFormData);
     setSourceUrl('');
+    setActiveTab('general');
   };
 
   const handleEdit = (product: any) => {
@@ -312,6 +357,8 @@ export function AdminProducts() {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<'general' | 'media' | 'specs' | 'seo'>('general');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -400,6 +447,14 @@ export function AdminProducts() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
+                <th className="px-5 py-4 text-left">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.length === localProducts.length && localProducts.length > 0} 
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                </th>
                 <th className="px-5 py-4 text-left text-[10px] uppercase font-black text-slate-400 tracking-tighter">Product Info</th>
                 <th className="px-5 py-4 text-left text-[10px] uppercase font-black text-slate-400 tracking-tighter">Pricing</th>
                 <th className="px-5 py-4 text-left text-[10px] uppercase font-black text-slate-400 tracking-tighter">Platform</th>
@@ -411,7 +466,15 @@ export function AdminProducts() {
                 <tr><td colSpan={4} className="py-20 text-center"><Icon name="loader-2" size={40} className="text-emerald-500 animate-spin mx-auto" /></td></tr>
               ) : localProducts.length > 0 ? (
                 localProducts.map(product => (
-                  <tr key={product.id} className="hover:bg-slate-50/50 cursor-pointer transition-colors group" onClick={() => handleEdit(product)}>
+                  <tr key={product.id} className={`hover:bg-slate-50/50 cursor-pointer transition-colors group ${selectedIds.includes(product.id) ? 'bg-emerald-50/30' : ''}`} onClick={() => handleEdit(product)}>
+                    <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                       <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(product.id)} 
+                        onChange={() => toggleSelectOne(product.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                    </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center p-1 shadow-xs ring-1 ring-slate-100">
@@ -460,6 +523,45 @@ export function AdminProducts() {
       </div>
 
       <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <m.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-8 border border-slate-700"
+          >
+            <div className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-sm">{selectedIds.length}</span>
+              <span className="font-bold text-sm text-slate-300">items selected</span>
+            </div>
+            <div className="h-6 w-px bg-slate-700" />
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleBulkBroadcast}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 rounded-xl transition-all text-sm font-bold text-emerald-400"
+              >
+                <Icon name="share-2" size={18} />
+                Broadcast All
+              </button>
+              <button 
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-red-900/30 rounded-xl transition-all text-sm font-bold text-red-400"
+              >
+                <Icon name="trash-2" size={18} />
+                Delete Selected
+              </button>
+              <button 
+                onClick={() => setSelectedIds([])}
+                className="px-4 py-2 hover:bg-slate-800 rounded-xl transition-all text-sm font-bold text-slate-400"
+              >
+                Clear
+              </button>
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-50 flex justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto items-start">
             <m.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl my-4 overflow-hidden border border-slate-100">
@@ -471,87 +573,237 @@ export function AdminProducts() {
                 <button onClick={closeModal} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-all"><Icon name="x" size={24} /></button>
               </div>
 
-              <div className="p-6 max-h-[85vh] overflow-y-auto scrollbar-hide">
-                {!editingProduct && (
-                  <div className="mb-8 rounded-2xl border border-slate-900/10 overflow-hidden shadow-sm">
-                    <div className="bg-slate-900 px-5 py-3.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                        <span className="text-white font-black text-xs uppercase tracking-widest">AI Extraction Agent</span>
-                      </div>
-                    </div>
-                    <div className="p-6 bg-slate-50 space-y-6">
-                      <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1">1. Link to Product Page (Source)</label>
-                        <div className="flex gap-2">
-                           <input type="url" value={sourceUrl} onChange={e=>setSourceUrl(e.target.value)} className="flex-1 bg-white border-2 border-slate-200 p-4 rounded-xl outline-none text-sm font-bold focus:border-emerald-500 transition-all shadow-sm" placeholder="Paste Amazon, Flipkart, Ajio, or Myntra link..." />
-                           <button type="button" onClick={handleAutoFetch} disabled={!sourceUrl || isFetching} className="bg-emerald-600 hover:bg-emerald-700 px-8 rounded-xl text-white font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/10 flex items-center gap-2 disabled:opacity-50">
-                             {isFetching ? <Icon name="loader-2" size={18} className="animate-spin" /> : <Icon name="zap" size={18} />}
-                             {isFetching ? 'Extracting...' : 'Extract Data'}
-                           </button>
+                <div className="flex border-b border-slate-100 bg-slate-50/30 px-6">
+                  {['general', 'media', 'specs', 'seo'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab as any)}
+                      className={`px-6 py-4 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${
+                        activeTab === tab 
+                          ? 'border-emerald-500 text-emerald-600 bg-white' 
+                          : 'border-transparent text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-6 max-h-[75vh] overflow-y-auto scrollbar-hide">
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    {activeTab === 'general' && (
+                      <div className="space-y-8">
+                        {!editingProduct && (
+                          <div className="mb-8 rounded-2xl border border-slate-900/10 overflow-hidden shadow-sm">
+                            <div className="bg-slate-900 px-5 py-3.5 flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                                <span className="text-white font-black text-xs uppercase tracking-widest">AI Extraction Agent</span>
+                              </div>
+                            </div>
+                            <div className="p-6 bg-slate-50 space-y-6">
+                              <div>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2 ml-1">1. Link to Product Page (Source)</label>
+                                <div className="flex gap-2">
+                                  <input type="url" value={sourceUrl} onChange={e=>setSourceUrl(e.target.value)} className="flex-1 bg-white border-2 border-slate-200 p-4 rounded-xl outline-none text-sm font-bold focus:border-emerald-500 transition-all shadow-sm" placeholder="Paste Amazon, Flipkart, Ajio, or Myntra link..." />
+                                  <button type="button" onClick={handleAutoFetch} disabled={!sourceUrl || isFetching} className="bg-emerald-600 hover:bg-emerald-700 px-8 rounded-xl text-white font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/10 flex items-center gap-2 disabled:opacity-50">
+                                    {isFetching ? <Icon name="loader-2" size={18} className="animate-spin" /> : <Icon name="zap" size={18} />}
+                                    {isFetching ? 'Extracting...' : 'Extract Data'}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="border-t border-slate-200 pt-6">
+                                <label className="block text-[10px] font-black text-orange-500 uppercase mb-2 ml-1">2. Affiliate Link</label>
+                                <input type="url" value={formData.affiliateLinks[0]?.url || ''} 
+                                      onChange={e=>{ 
+                                        const updated=[...formData.affiliateLinks]; 
+                                        const platform = detectEcommercePlatform(e.target.value);
+                                        updated[0] = { url: e.target.value, platform: platform.name, icon: platform.iconFile || 'generic.svg', price: formData.price }; 
+                                        setFormData({...formData, affiliateLinks: updated, affiliateLink: e.target.value}); 
+                                      }} 
+                                      className="w-full bg-white border-2 border-orange-100 p-4 rounded-xl outline-none text-sm font-black text-orange-600 focus:border-orange-500 transition-all shadow-sm placeholder:text-orange-200" 
+                                      placeholder="Paste EarnKaro / Affiliate link here..." />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
+                          <div className="md:col-span-2 relative group">
+                              <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest flex items-center justify-between">
+                                Product Title *
+                                <button type="button" onClick={handleEnrich} disabled={isFetching} className="text-[10px] bg-indigo-600 text-white px-3 py-1 rounded-full flex items-center gap-1">AI Enrich</button>
+                              </label>
+                              <textarea rows={2} required value={formData.fullTitle} onChange={e=>setFormData({...formData, fullTitle: e.target.value, title: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none transition-all font-bold text-slate-700 resize-none" />
+                          </div>
+                          <div className="md:col-span-2">
+                              <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Description</label>
+                              <textarea rows={3} value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none transition-all font-medium text-sm text-slate-600 resize-none" />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Sale Price *</label>
+                              <input type="text" required value={formData.price} onChange={e=>setFormData({...formData, price: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-black text-slate-900" />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Category</label>
+                              <select value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-bold text-slate-700">
+                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                              </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Brand</label>
+                            <input type="text" value={formData.brand} onChange={e=>setFormData({...formData, brand: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-bold text-slate-700" />
+                          </div>
+                          <div>
+                             <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Platform</label>
+                             <input type="text" value={formData.platform} onChange={e=>setFormData({...formData, platform: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-bold text-slate-700" />
+                          </div>
+
+                          <div className="md:col-span-2 pt-4 flex flex-wrap gap-8">
+                              <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className={`w-14 h-7 rounded-full p-1 transition-all duration-300 ${formData.published ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                  <div className={`w-5 h-5 bg-white rounded-full transition-all duration-300 transform ${formData.published ? 'translate-x-7' : 'translate-x-0'}`} />
+                                </div>
+                                <input type="checkbox" className="hidden" checked={formData.published} onChange={e=>setFormData({...formData, published: e.target.checked})} />
+                                <span className="text-[10px] font-black uppercase text-slate-700 tracking-widest">Published</span>
+                              </label>
+
+                              <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className={`w-14 h-7 rounded-full p-1 transition-all duration-300 ${formData.trending ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                                  <div className={`w-5 h-5 bg-white rounded-full transition-all duration-300 transform ${formData.trending ? 'translate-x-7' : 'translate-x-0'}`} />
+                                </div>
+                                <input type="checkbox" className="hidden" checked={formData.trending} onChange={e=>setFormData({...formData, trending: e.target.checked})} />
+                                <span className="text-[10px] font-black uppercase text-slate-700 tracking-widest">Trending</span>
+                              </label>
+
+                              <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className={`w-14 h-7 rounded-full p-1 transition-all duration-300 ${formData.bestseller ? 'bg-blue-500' : 'bg-slate-300'}`}>
+                                  <div className={`w-5 h-5 bg-white rounded-full transition-all duration-300 transform ${formData.bestseller ? 'translate-x-7' : 'translate-x-0'}`} />
+                                </div>
+                                <input type="checkbox" className="hidden" checked={formData.bestseller} onChange={e=>setFormData({...formData, bestseller: e.target.checked})} />
+                                <span className="text-[10px] font-black uppercase text-slate-700 tracking-widest">Bestseller</span>
+                              </label>
+                          </div>
                         </div>
                       </div>
-                      <div className="border-t border-slate-200 pt-6">
-                         <label className="block text-[10px] font-black text-orange-500 uppercase mb-2 ml-1">2. Affiliate Link</label>
-                         <input type="url" value={formData.affiliateLinks[0]?.url || ''} 
-                               onChange={e=>{ 
-                                 const updated=[...formData.affiliateLinks]; 
-                                 const platform = detectEcommercePlatform(e.target.value);
-                                 updated[0] = { url: e.target.value, platform: platform.name, icon: platform.iconFile || 'generic.svg', price: formData.price }; 
-                                 setFormData({...formData, affiliateLinks: updated, affiliateLink: e.target.value}); 
-                               }} 
-                               className="w-full bg-white border-2 border-orange-100 p-4 rounded-xl outline-none text-sm font-black text-orange-600 focus:border-orange-500 transition-all shadow-sm placeholder:text-orange-200" 
-                               placeholder="Paste EarnKaro / Affiliate link here..." />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                    )}
 
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
-                    <div className="md:col-span-2 relative group">
-                        <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest flex items-center justify-between">
-                          Product Title *
-                          <button type="button" onClick={handleEnrich} disabled={isFetching} className="text-[10px] bg-indigo-600 text-white px-3 py-1 rounded-full flex items-center gap-1">AI Enrich</button>
-                        </label>
-                        <textarea rows={2} required value={formData.fullTitle} onChange={e=>setFormData({...formData, fullTitle: e.target.value, title: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none transition-all font-bold text-slate-700 resize-none" />
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Description</label>
-                        <textarea rows={3} value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none transition-all font-medium text-sm text-slate-600 resize-none" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Sale Price *</label>
-                        <input type="text" required value={formData.price} onChange={e=>setFormData({...formData, price: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-black text-slate-900" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">Category</label>
-                        <select value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-bold text-slate-700">
-                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-black text-slate-900 uppercase tracking-widest mb-4">Product Images</label>
+                    {activeTab === 'media' && (
+                      <div className="space-y-6">
+                        <label className="block text-xs font-black text-slate-900 uppercase tracking-widest">Product Images</label>
                         <ProductImageManager images={formData.images} onChange={imgs=>setFormData({...formData, images: imgs})} />
-                    </div>
-                    <div className="md:col-span-2 pt-4 flex items-center gap-6">
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                          <div className={`w-14 h-7 rounded-full p-1 transition-all duration-300 ${formData.published ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                            <div className={`w-5 h-5 bg-white rounded-full transition-all duration-300 transform ${formData.published ? 'translate-x-7' : 'translate-x-0'}`} />
+                      </div>
+                    )}
+
+                    {activeTab === 'specs' && (
+                      <div className="space-y-10">
+                        {/* Features */}
+                        <div>
+                          <label className="block text-xs font-black text-slate-500 uppercase mb-4 tracking-widest">Key Features (One per line)</label>
+                          <textarea 
+                            rows={5} 
+                            value={formData.features.join('\n')} 
+                            onChange={e=>setFormData({...formData, features: e.target.value.split('\n').filter(Boolean)})} 
+                            className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-medium text-sm text-slate-700"
+                            placeholder="Example: 4K Ultra HD Display&#10;Snapdragon 8 Gen 2 Processor"
+                          />
+                        </div>
+
+                        {/* Pros & Cons */}
+                        <div className="grid md:grid-cols-2 gap-8">
+                          <div>
+                             <label className="block text-xs font-black text-emerald-600 uppercase mb-4 tracking-widest">Pros</label>
+                             <textarea 
+                              rows={5} 
+                              value={formData.pros.join('\n')} 
+                              onChange={e=>setFormData({...formData, pros: e.target.value.split('\n').filter(Boolean)})} 
+                              className="w-full border-2 border-emerald-50 p-4 rounded-2xl focus:border-emerald-500 bg-emerald-50/10 outline-none font-medium text-sm text-slate-700"
+                              placeholder="Positive point 1&#10;Positive point 2"
+                            />
                           </div>
-                          <input type="checkbox" className="hidden" checked={formData.published} onChange={e=>setFormData({...formData, published: e.target.checked})} />
-                          <span className="text-xs font-black uppercase text-slate-700 tracking-widest">Public Deployment</span>
-                        </label>
+                          <div>
+                             <label className="block text-xs font-black text-red-600 uppercase mb-4 tracking-widest">Cons</label>
+                             <textarea 
+                              rows={5} 
+                              value={formData.cons.join('\n')} 
+                              onChange={e=>setFormData({...formData, cons: e.target.value.split('\n').filter(Boolean)})} 
+                              className="w-full border-2 border-red-50 p-4 rounded-2xl focus:border-red-500 bg-red-50/10 outline-none font-medium text-sm text-slate-700"
+                              placeholder="Negative point 1&#10;Negative point 2"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Specifications Table */}
+                        <div>
+                           <div className="flex items-center justify-between mb-4">
+                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest">Full Specifications</label>
+                             <button 
+                                type="button" 
+                                onClick={() => {
+                                  const key = prompt('Spec Name (e.g. Battery):');
+                                  const val = prompt('Spec Value (e.g. 5000mAh):');
+                                  if (key && val) setFormData({...formData, specifications: {...formData.specifications, [key]: val}});
+                                }}
+                                className="text-[10px] bg-slate-900 text-white px-4 py-2 rounded-lg font-black uppercase tracking-widest"
+                             >
+                               + Add Spec
+                             </button>
+                           </div>
+                           <div className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
+                             <table className="w-full text-sm">
+                               <tbody className="divide-y divide-slate-200">
+                                 {Object.entries(formData.specifications).length > 0 ? (
+                                   Object.entries(formData.specifications).map(([key, val]) => (
+                                     <tr key={key}>
+                                       <td className="px-4 py-3 font-bold text-slate-500 bg-slate-100/50 w-1/3">{key}</td>
+                                       <td className="px-4 py-3 text-slate-700">
+                                          <div className="flex items-center justify-between">
+                                            <span>{val}</span>
+                                            <button 
+                                              type="button" 
+                                              onClick={() => {
+                                                const {[key]: removed, ...rest} = formData.specifications;
+                                                setFormData({...formData, specifications: rest});
+                                              }}
+                                              className="text-red-400 hover:text-red-600"
+                                            >
+                                              <Icon name="x" size={14} />
+                                            </button>
+                                          </div>
+                                       </td>
+                                     </tr>
+                                   ))
+                                 ) : (
+                                   <tr><td className="px-4 py-8 text-center text-slate-400 italic">No specifications added</td></tr>
+                                 )}
+                               </tbody>
+                             </table>
+                           </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'seo' && (
+                      <div className="space-y-6">
+                        <div>
+                          <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">SEO Title Override</label>
+                          <input type="text" value={formData.seoTitle} onChange={e=>setFormData({...formData, seoTitle: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-bold text-slate-900" placeholder="Custom meta title for Google..." />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-black text-slate-500 uppercase mb-2 tracking-widest">SEO Meta Description</label>
+                          <textarea rows={4} value={formData.seoDescription} onChange={e=>setFormData({...formData, seoDescription: e.target.value})} className="w-full border-2 border-slate-100 p-4 rounded-2xl focus:border-emerald-500 bg-slate-50/30 outline-none font-medium text-sm text-slate-700 resize-none" placeholder="Catchy description for search results..." />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-3 pt-8 border-t border-slate-100">
+                      <button type="button" onClick={closeModal} className="px-8 py-4 text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-50 rounded-2xl transition-all">Cancel</button>
+                      <button type="submit" className="bg-emerald-600 text-white px-12 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-900/10 hover:bg-emerald-700 active:scale-95 transition-all">
+                        {editingProduct ? 'Commit Changes' : 'Publish Product'}
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-8 border-t border-slate-100">
-                    <button type="button" onClick={closeModal} className="px-8 py-4 text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-50 rounded-2xl transition-all">Cancel</button>
-                    <button type="submit" className="bg-emerald-600 text-white px-12 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-900/10 hover:bg-emerald-700 active:scale-95 transition-all">
-                      {editingProduct ? 'Commit Changes' : 'Publish Product'}
-                    </button>
-                  </div>
-                </form>
-              </div>
+                  </form>
+                </div>
             </m.div>
           </div>
         )}
