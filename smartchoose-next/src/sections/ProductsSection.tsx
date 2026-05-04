@@ -44,6 +44,8 @@ export function ProductsSection({
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [toast, setToast] = useState({ show: false, message: '' });
   const observerTarget = useRef<HTMLDivElement>(null);
+  // Track if we've done the initial load — prevents wiping server-provided initialProducts
+  const initialLoadDone = useRef(initialProducts.length > 0);
 
   const { isSubscribed, subscribe, loading, isDismissed, dismiss } = useNotifications('products');
 
@@ -146,7 +148,11 @@ export function ProductsSection({
 
   // Category Change (Reset)
   useEffect(() => {
-    if (selectedCategory === 'All' && localProducts.length > 0 && initialProducts.length > 0) return; // Skip first load if we have server data
+    // Skip the very first run if we already have server-provided products
+    if (initialLoadDone.current) {
+      initialLoadDone.current = false; // Allow future category changes to fetch
+      return;
+    }
     
     setLocalProducts([]);
     setLastDoc(null);

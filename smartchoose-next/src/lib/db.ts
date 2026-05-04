@@ -1,78 +1,161 @@
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase';
-import type { Product, BlogPost, Settings, SiteStats } from '@/types';
-
 /**
  * SERVER-ONLY DATA FETCHERS
- * These functions run on the server to provide initial data for LCP and SEO.
+ * Uses Firebase REST API for reliable server-side fetching (avoids QUIC/WebSocket SSR issues).
  */
 
-export async function getSettings(): Promise<Settings> {
-  try {
-    const snap = await getDoc(doc(db, 'settings', 'site_settings'));
-    return snap.exists() ? (snap.data() as Settings) : {} as Settings;
-  } catch (e) {
-    console.error('getSettings error:', e);
-    return {} as Settings;
-  }
+import type { Product, BlogPost, Settings, SiteStats } from '@/types';
+
+const PROJECT_ID = 'smartchoose-official';
+const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+
+/**
+ * Convert a Firestore REST document value to a JavaScript value.
+ */
+function parseValue(val: any): any {
+  if (!val) return null;
+  if ('stringValue' in val) return val.stringValue;
+  if ('integerValue' in val) return Number(val.integerValue);
+  if ('doubleValue' in val) return val.doubleValue;
+  if ('booleanValue' in val) return val.booleanValue;
+  if ('timestampValue' in val) return val.timestampValue;
+  if ('nullValue' in val) return null;
+  if ('arrayValue' in val) return (val.arrayValue?.values || []).map(parseValue);
+  if ('mapValue' in val) return parseDoc(val.mapValue?.fields || {});
+  return null;
 }
 
-export async function getHeroProducts(): Promise<Product[]> {
-  try {
-    const q = query(
-      collection(db, 'products'),
-      where('published', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(10)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-  } catch (e) {
-    console.error('getHeroProducts error:', e);
-    // Fallback without orderBy if index is missing
-    const q = query(collection(db, 'products'), where('published', '==', true), limit(10));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+function parseDoc(fields: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    result[key] = parseValue(value);
   }
+  return result;
 }
 
-export async function getFeaturedProducts(count: number = 12): Promise<Product[]> {
+async function firestoreQuery(collectionPath: string, filters: any[], orderFields: string[] = [], limitCount = 10): Promise<any[]> {
   try {
-    const q = query(
-      collection(db, 'products'),
-      where('published', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(count)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-  } catch (e) {
-    const q = query(collection(db, 'products'), where('published', '==', true), limit(count));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-  }
-}
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+    
+    const structuredQuery: any = {
+      from: [{ collectionId: collectionPath }],
+      limit: limitCount,
+    };
 
-export async function getLatestBlogs(count: number = 4): Promise<BlogPost[]> {
-  try {
-    const q = query(
-      collection(db, 'blogPosts'),
-      where('status', '==', 'published'),
-      orderBy('updatedAt', 'desc'),
-      limit(count)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
+    if (filters.length > 0) {
+      structuredQuery.where = filters.length === 1 ? filters[0] : {
+        compositeFilter: {
+          op: 'AND',
+          filters: filters,
+        },
+      };
+    }
+
+    if (orderFields.length > 0) {
+      structuredQuery.orderBy = orderFields.map(f => ({
+        field: { fieldPath: f.startsWith('-') ? f.slice(1) : f },
+        direction: f.startsWith('-') ? 'DESCENDING' : 'ASCENDING',
+      }));
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ structuredQuery }),
+      next: { revalidate: 60 }, // Cache for 60 seconds
+    });
+
+    if (!res.ok) throw new Error(`Firestore query failed: ${res.status}`);
+    
+    const data = await res.json();
+    return (data || [])
+      .filter((item: any) => item.document)
+      .map((item: any) => {
+        const name: string = item.document.name;
+        const id = name.split('/').pop();
+        return { id, ...parseDoc(item.document.fields || {}) };
+      });
   } catch (e) {
+    console.error(`Firestore REST query error for ${collectionPath}:`, e);
     return [];
   }
 }
 
-export async function getSiteStats(): Promise<SiteStats> {
+async function firestoreGet(docPath: string): Promise<any | null> {
   try {
-    const snap = await getDoc(doc(db, 'settings', 'site_stats'));
-    return snap.exists() ? (snap.data() as SiteStats) : {} as SiteStats;
+    const url = `${FIRESTORE_BASE}/${docPath}`;
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return parseDoc(data.fields || {});
   } catch (e) {
-    return {} as SiteStats;
+    return null;
   }
+}
+
+function makeFilter(field: string, op: string, value: any, valueType = 'stringValue'): any {
+  return {
+    fieldFilter: {
+      field: { fieldPath: field },
+      op,
+      value: { [valueType]: value },
+    },
+  };
+}
+
+export async function getSettings(): Promise<Settings> {
+  const data = await firestoreGet('settings/site_settings');
+  return (data || {}) as Settings;
+}
+
+export async function getHeroProducts(): Promise<Product[]> {
+  const products = await firestoreQuery(
+    'products',
+    [makeFilter('published', 'EQUAL', true, 'booleanValue')],
+    [], // No orderBy — avoids composite index requirement
+    10
+  );
+  return products as Product[];
+}
+
+export async function getFeaturedProducts(count: number = 12): Promise<Product[]> {
+  const products = await firestoreQuery(
+    'products',
+    [makeFilter('published', 'EQUAL', true, 'booleanValue')],
+    [], // No orderBy — avoids composite index requirement
+    count
+  );
+  return products as Product[];
+}
+
+export async function getLatestBlogs(count: number = 4): Promise<BlogPost[]> {
+  const blogs = await firestoreQuery(
+    'blogPosts',
+    [makeFilter('status', 'EQUAL', 'published')],
+    [], // No orderBy — avoids composite index requirement
+    count
+  );
+  return blogs as BlogPost[];
+}
+
+export async function getSiteStats(): Promise<SiteStats> {
+  const data = await firestoreGet('settings/site_stats');
+  return (data || {}) as SiteStats;
+}
+
+export async function getProductById(id: string): Promise<Product | null> {
+  const data = await firestoreGet(`products/${id}`);
+  return data ? ({ id, ...data } as Product) : null;
+}
+
+export async function getBlogBySlug(slug: string): Promise<BlogPost | null> {
+  const blogs = await firestoreQuery(
+    'blogPosts',
+    [
+      makeFilter('slug', 'EQUAL', slug),
+      makeFilter('status', 'EQUAL', 'published'),
+    ],
+    [],
+    1
+  );
+  return blogs.length > 0 ? (blogs[0] as BlogPost) : null;
 }
