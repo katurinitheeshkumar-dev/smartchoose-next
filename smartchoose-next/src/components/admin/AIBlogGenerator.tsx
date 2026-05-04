@@ -34,7 +34,7 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
         await updateSettings({ geminiApiKey: apiKey });
       }
 
-      // 2. Call Gemini API directly (Client-side for now as requested)
+      // 2. Call Gemini API
       setStatus('Generating high-quality SEO content...');
       
       const prompt = `
@@ -72,7 +72,8 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
         }
       `;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      // Try Gemini 2.0 Flash, fallback to 1.5 Flash
+      let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,7 +82,29 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
         })
       });
 
+      if (!response.ok) {
+        // Fallback to 1.5 Flash
+        console.warn('Gemini 2.0 failed, trying 1.5 Flash...');
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { response_mime_type: "application/json" }
+          })
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || `API Error: ${response.status}`);
+      }
+
       const data = await response.json();
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        throw new Error('Empty response from AI model');
+      }
+
       const generatedJson = JSON.parse(data.candidates[0].content.parts[0].text);
 
       // 3. Generate a high-quality AI image using Pollinations.ai
@@ -98,9 +121,9 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
         setIsGenerating(false);
       }, 1000);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Generation failed:', err);
-      alert('Generation failed. Please check your API key and try again.');
+      alert(`Generation failed: ${err.message || 'Please check your API key and try again.'}`);
       setIsGenerating(false);
     }
   };
