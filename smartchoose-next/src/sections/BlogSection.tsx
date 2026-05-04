@@ -48,7 +48,7 @@ export function BlogSection({ initialBlogs = [] }: { initialBlogs?: any[] }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              onClick={() => router.push(`/${post.slug}`)}
+              onClick={() => router.push(`/blog/${post.slug}`)}
               className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col"
             >
               <div className="aspect-[16/10] bg-emerald-50 relative overflow-hidden">

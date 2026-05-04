@@ -19,6 +19,13 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
   // Use initial products from server
   const [topProducts, setTopProducts] = React.useState<any[]>(initialProducts);
 
+  // Sync products if initialProducts changes (e.g. after hydration)
+  React.useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) {
+      setTopProducts(initialProducts);
+    }
+  }, [initialProducts]);
+
   // Get latest blog post
   const latestBlog = React.useMemo(() => {
     return [...(blogPosts || [])]
@@ -230,7 +237,7 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
               </div>
 
               <m.div 
-                onClick={() => latestBlog ? window.open(`/blog/${latestBlog.id}`, '_self') : window.open('/blog', '_self')}
+                onClick={() => latestBlog ? window.open(`/blog/${latestBlog.slug}`, '_self') : window.open('/blog', '_self')}
                 className="col-span-12 row-span-4 sm:row-span-3 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-[2.5rem] shadow-xl p-6 sm:p-8 flex items-center justify-between group cursor-pointer hover:shadow-emerald-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden relative text-white"
               >
                  <div className="relative z-10 flex-1 min-w-0 pr-4">

@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -126,7 +127,7 @@ function EditorialSidebar({ blogPosts, category }: { blogPosts: BlogPost[]; cate
           {trending.map(post => (
             <div 
               key={post.id} 
-              onClick={() => { router.push(`/${post.slug}`); window.scrollTo({ top: 0 }); }}
+              onClick={() => { router.push(`/blog/${post.slug}`); window.scrollTo({ top: 0 }); }}
               className="group cursor-pointer"
             >
               <h4 className="text-sm font-bold text-slate-800 line-clamp-2 group-hover:text-emerald-600 transition-colors leading-snug">
@@ -180,7 +181,7 @@ function RelatedPosts({ current, blogPosts }: { current: BlogPost; blogPosts: Bl
           return (
             <div
               key={post.id}
-              onClick={() => { router.push(`/${post.slug}`); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              onClick={() => { router.push(`/blog/${post.slug}`); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className="group cursor-pointer"
             >
               <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-slate-100 mb-4 border border-slate-100">
@@ -206,15 +207,17 @@ function RelatedPosts({ current, blogPosts }: { current: BlogPost; blogPosts: Bl
 // ═══════════════════════════════════════════════════════════════════════════════
 // BlogPostPage
 // ═══════════════════════════════════════════════════════════════════════════════
-export function BlogPostPage() {
-  const { slug } = useParams<{ slug: string }>();
+export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
+  const params = useParams<{ slug: string }>();
+  const slug = params?.slug;
   const router = useRouter();
   const { getBlogBySlug, blogPosts, isInitialLoading, settings } = useDatabase();
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showTopButton, setShowTopButton] = useState(false);
   const [showStickyCta, setShowStickyCta] = useState(false);
 
-  const post = getBlogBySlug(slug || '');
+  // Use initialPost from server or fetch from client context
+  const post = initialPost || getBlogBySlug(slug || '');
   const siteUrl = settings.siteUrl || 'https://smartchoose.in';
 
   // Handle Scroll Progress, Top Button & Sticky CTA
@@ -237,7 +240,7 @@ export function BlogPostPage() {
   }, [post]);
 
   // Extract SEO values once for Helmet
-  const postUrl = `${siteUrl}/${post?.slug}`;
+  const postUrl = `${siteUrl}/blog/${post?.slug}`;
   const postImage = post?.featuredImage || `${siteUrl}/logo.png`;
   const seoTitle = post?.seoTitle || (post ? `${post.title} | SmartChoose` : 'SmartChoose');
   const seoDesc = post?.seoDescription || (post?.intro?.slice(0, 155) || '') + '...';

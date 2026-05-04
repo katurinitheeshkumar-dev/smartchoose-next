@@ -30,9 +30,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [router]);
 
-  const handleSearchSelect = useCallback((productId: string, type: 'product' | 'blog' = 'product') => {
+  const handleSearchSelect = useCallback((idOrSlug: string, type: 'product' | 'blog' = 'product') => {
     if (type === 'product') {
-      setHighlightedProduct(productId);
+      setHighlightedProduct(idOrSlug);
       router.push('/');
       setTimeout(() => {
         const element = document.getElementById('products-section');
@@ -43,7 +43,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         setHighlightedProduct(null);
       }, 3000);
     } else {
-      router.push(`/${productId}`);
+      router.push(`/blog/${idOrSlug}`);
     }
   }, [router, setHighlightedProduct]);
 

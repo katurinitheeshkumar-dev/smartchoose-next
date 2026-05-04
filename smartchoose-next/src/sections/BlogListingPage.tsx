@@ -82,7 +82,7 @@ export function BlogListingPage() {
         {!isLoading && featuredPost && selectedCategory === 'All' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
             <article 
-              onClick={() => router.push(`/${featuredPost.slug}`)}
+              onClick={() => router.push(`/blog/${featuredPost.slug}`)}
               className="group relative bg-slate-900 rounded-[2.5rem] overflow-hidden cursor-pointer shadow-2xl shadow-indigo-500/10"
             >
               <div className="grid lg:grid-cols-2">
@@ -183,7 +183,7 @@ export function BlogListingPage() {
               {(selectedCategory === 'All' ? regularPosts : filteredPosts).map((post: BlogPost) => (
                 <article
                   key={post.id}
-                  onClick={() => router.push(`/${post.slug}`)}
+                  onClick={() => router.push(`/blog/${post.slug}`)}
                   className="group cursor-pointer flex flex-col"
                 >
                   <div className="aspect-[16/10] rounded-[2rem] overflow-hidden mb-6 bg-slate-100 relative">

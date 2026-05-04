@@ -78,70 +78,95 @@ export function ProductsSection({
     return filtered;
   }, [localProducts, selectedCategory, searchQuery]);
 
-  // Firebase Fetch Function
+  // Firestore REST Fetch Function
   const fetchProducts = async (isLoadMore = false) => {
     try {
       if (isLoadMore) setIsBatchLoading(true);
       else if (localProducts.length === 0) setIsInitialLoading(true);
 
-      const { collection, query, orderBy, limit, startAfter, where, getDocs } = await import('firebase/firestore');
-      const { db } = await import('@/lib/firebase');
-
-      let q;
-      const baseConstraints = [
-        where('published', '==', true)
-      ];
-
-      try {
-        // Attempt complex query (requires index)
-        q = query(collection(db, 'products'), ...baseConstraints, orderBy('createdAt', 'desc'), limit(PRODUCTS_PER_PAGE));
-        if (isLoadMore && lastDoc) q = query(q, startAfter(lastDoc));
-        
-        const snapshot = await getDocs(q);
-        processSnapshot(snapshot, isLoadMore);
-      } catch (err: any) {
-        if (err.code === 'failed-precondition' || err.message?.includes('index')) {
-          console.warn('Index missing, falling back to simple query...');
-          // Fallback to simple query without orderBy
-          q = query(collection(db, 'products'), ...baseConstraints, limit(PRODUCTS_PER_PAGE));
-          if (isLoadMore && lastDoc) q = query(q, startAfter(lastDoc));
-          
-          const snapshot = await getDocs(q);
-          processSnapshot(snapshot, isLoadMore);
-        } else {
-          throw err;
+      const PROJECT_ID = 'smartchoose-official';
+      const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+      
+      const filters: any[] = [{
+        fieldFilter: {
+          field: { fieldPath: 'published' },
+          op: 'EQUAL',
+          value: { booleanValue: true },
         }
+      }];
+
+      if (selectedCategory !== 'All') {
+        filters.push({
+          fieldFilter: {
+            field: { fieldPath: 'category' },
+            op: 'EQUAL',
+            value: { stringValue: selectedCategory },
+          }
+        });
+      }
+
+      const structuredQuery: any = {
+        from: [{ collectionId: 'products' }],
+        where: filters.length === 1 ? filters[0] : {
+          compositeFilter: {
+            op: 'AND',
+            filters: filters,
+          }
+        },
+        limit: PRODUCTS_PER_PAGE,
+      };
+
+      // Note: Infinite scroll pagination with REST API is complex without orderBy.
+      // For now, we fetch the first batch. Real pagination would need orderBy and startAt.
+      // But we removed orderBy to avoid index issues. 
+      // We will rely on Algolia for more complex browsing if needed.
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ structuredQuery }),
+      });
+
+      if (!res.ok) throw new Error(`Firestore REST failed: ${res.status}`);
+      
+      const data = await res.json();
+      const docs = (data || [])
+        .filter((item: any) => item.document)
+        .map((item: any) => {
+          const fields = item.document.fields || {};
+          const result: any = { id: item.document.name.split('/').pop() };
+          
+          // Basic parser for needed fields
+          for (const [k, v] of Object.entries(fields)) {
+            const val: any = v;
+            if ('stringValue' in val) result[k] = val.stringValue;
+            else if ('integerValue' in val) result[k] = Number(val.integerValue);
+            else if ('doubleValue' in val) result[k] = val.doubleValue;
+            else if ('booleanValue' in val) result[k] = val.booleanValue;
+            else if ('arrayValue' in val) result[k] = (val.arrayValue.values || []).map((av: any) => av.stringValue || av.mapValue);
+          }
+          return result;
+        });
+
+      if (docs.length < PRODUCTS_PER_PAGE) {
+        setHasMore(false);
+      }
+
+      if (isLoadMore) {
+        setLocalProducts(prev => {
+          const newDocs = docs.filter((d: any) => !prev.find(p => p.id === d.id));
+          return [...prev, ...newDocs];
+        });
+      } else {
+        setLocalProducts(docs);
       }
 
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Error fetching products via REST:", error);
       setHasMore(false);
     } finally {
       setIsBatchLoading(false);
       setIsInitialLoading(false);
-    }
-  };
-
-  const processSnapshot = (snapshot: any, isLoadMore: boolean) => {
-    const docs = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-    
-    if (docs.length < PRODUCTS_PER_PAGE) {
-      setHasMore(false);
-    } else {
-      setHasMore(true);
-    }
-
-    if (snapshot.docs.length > 0) {
-      setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
-    }
-
-    if (isLoadMore) {
-      setLocalProducts(prev => {
-        const newDocs = docs.filter((d: any) => !prev.find(p => p.id === d.id));
-        return [...prev, ...newDocs];
-      });
-    } else {
-      setLocalProducts(docs);
     }
   };
 

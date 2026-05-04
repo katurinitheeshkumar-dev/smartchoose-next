@@ -1,7 +1,5 @@
 import { Suspense } from 'react';
 import { ProductDetail } from '@/sections/ProductDetail';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -9,18 +7,10 @@ type Props = {
   params: Promise<{ id: string }>
 };
 
+import { getProductById } from '@/lib/db';
+
 async function getProduct(id: string) {
-  try {
-    const docRef = doc(db, 'products', id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
-    }
-    return null;
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    return null;
-  }
+  return await getProductById(id);
 }
 
 export async function generateMetadata(

@@ -4,9 +4,10 @@ import { Icon } from '@/components/ui/custom/Icon';
 import type { Product } from '@/types';
 import { algoliasearch } from 'algoliasearch';
 
-const searchClient = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID && process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY
-  ? algoliasearch(process.env.NEXT_PUBLIC_ALGOLIA_APP_ID, process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY)
-  : null;
+const ALGOLIA_APP_ID = "P0Z3D6UVHU";
+const ALGOLIA_SEARCH_KEY = "e35a248fd899d0140303755dbc36adff";
+
+const searchClient = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_SEARCH_KEY);
 
 interface SearchDropdownProps {
   query: string;
@@ -94,21 +95,18 @@ export default function SearchDropdown({
 
   const renderMatchedProducts = () => (
     matchedProducts.length > 0 && (
-      <div className="border-b border-slate-100">
-        <div className="px-4 py-2 text-[10px] font-black text-slate-600 uppercase tracking-widest bg-slate-50/50">
-          Products ({matchedProducts.length})
+      <div className="border-b border-slate-100 pb-2">
+        <div className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          Product Suggestions
         </div>
         {matchedProducts.map(product => (
           <button
             key={product.id}
             onClick={() => onSelect(product.id, 'product')}
-            className="w-full flex items-center gap-3 p-3 hover:bg-emerald-50 transition-colors border-b border-slate-100 last:border-0 text-left"
+            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors text-left"
           >
-            <img src={product.images?.[0]} alt={product.title} width="40" height="40" loading="lazy" decoding="async" className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-900 text-sm truncate">{product.title}</p>
-              <p className="text-xs text-emerald-600 font-bold">{product.category} • {product.price}</p>
-            </div>
+            <Icon name="search" size={14} className="text-slate-300" />
+            <span className="text-sm font-medium text-slate-700 truncate">{product.title}</span>
           </button>
         ))}
       </div>

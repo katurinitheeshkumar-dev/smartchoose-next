@@ -311,14 +311,17 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   }, [syncAlgolia, recordGlobalStat]);
 
   const updateProduct = useCallback(async (id: string, updates: Partial<Product>) => {
-    const { doc, setDoc } = await import('firebase/firestore');
-    const product = products.find(p => p.id === id);
-    if (product) {
-      const updatedProduct = { ...product, ...updates };
-      await setDoc(doc(db, 'products', id), updatedProduct, { merge: true });
-      syncAlgolia('sync_single', { product: updatedProduct });
+    const { doc, setDoc, getDoc } = await import('firebase/firestore');
+    // For scalability, we update directly in Firestore even if not in local context
+    await setDoc(doc(db, 'products', id), updates, { merge: true });
+    
+    // If it was in local context, we could update it, but mostly we use separate fetchers now
+    // Still, let's try to sync Algolia
+    const snap = await getDoc(doc(db, 'products', id));
+    if (snap.exists()) {
+      syncAlgolia('sync_single', { product: { id, ...snap.data() } });
     }
-  }, [products, syncAlgolia]);
+  }, [syncAlgolia]);
 
   const deleteProduct = useCallback(async (id: string) => {
     const { doc, getDoc, deleteDoc } = await import('firebase/firestore');
@@ -634,10 +637,12 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   }, [jobs]);
 
   const broadcastJob = useCallback(async (jobId: string): Promise<boolean> => {
-    const job = jobs.find(j => j.id === jobId);
-    if (!job) return false;
-
     try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const snap = await getDoc(doc(db, 'jobs', jobId));
+      if (!snap.exists()) return false;
+      const job = { id: snap.id, ...snap.data() } as Job;
+
       const response = await fetch('https://smartchoose-proxy.vercel.app/api/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -663,13 +668,15 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
       console.error('Broadcast error:', error);
       return false;
     }
-  }, [jobs, settings, updateJob]);
+  }, [settings, updateJob]);
 
   const broadcastProduct = useCallback(async (productId: string): Promise<boolean> => {
-    const product = products.find(p => p.id === productId);
-    if (!product) return false;
-
     try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const snap = await getDoc(doc(db, 'products', productId));
+      if (!snap.exists()) return false;
+      const product = { id: snap.id, ...snap.data() } as Product;
+
       const response = await fetch('https://smartchoose-proxy.vercel.app/api/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -697,7 +704,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
       console.error('Error broadcasting product:', error);
       return false;
     }
-  }, [products, updateProduct, settings]);
+  }, [updateProduct, settings]);
 
   const broadcastBlog = useCallback(async (blogId: string): Promise<boolean> => {
     try {

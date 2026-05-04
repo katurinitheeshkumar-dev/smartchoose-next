@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState, useMemo } from 'react';
 import { ensureAbsoluteUrl } from '@/lib/utils';
 import { useParams } from 'next/navigation';
@@ -7,18 +8,18 @@ import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { useBookmarks } from '@/hooks/useBookmarks';
 
-export default function JobDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export default function JobDetailPage({ initialJob }: { initialJob?: any }) {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const { jobs, getJobById, recordJobView, recordJobApply, settings } = useDatabase();
   const { toggleBookmark, isBookmarked } = useBookmarks();
-  const [job, setJob] = useState<any>(null);
-  const [isFetching, setIsFetching] = useState(true);
+  const [job, setJob] = useState<any>(initialJob);
+  const [isFetching, setIsFetching] = useState(!initialJob);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || initialJob) return;
 
     const loadJob = async () => {
-      // Use the optimized fetcher
       const found = await getJobById(id);
       if (found) {
         setJob(found);
@@ -28,7 +29,7 @@ export default function JobDetailPage() {
     };
 
     loadJob();
-  }, [id, getJobById, recordJobView]);
+  }, [id, getJobById, recordJobView, initialJob]);
 
   const similarJobs = useMemo(() => {
     if (!job) return [];

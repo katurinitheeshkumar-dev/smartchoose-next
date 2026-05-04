@@ -29,7 +29,7 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
   const clickCountRef = useRef(0);
   const TAP_TIMEOUT = 300;
 
-  const isBlogView = pathname.includes('/blog') || pathname.length > 1 && !['/about', '/jobs', '/admin', '/privacy', '/terms', '/disclosure', '/contact', '/returns', '/sitemap'].some(p => pathname.startsWith(p)) && !pathname.startsWith('/product/');
+  const isBlogView = pathname.startsWith('/blog');
   const isJobView = pathname.startsWith('/jobs');
 
   // Debounce logic for the dropdown only
@@ -76,18 +76,7 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
   };
 
   const fetchSearchProducts = async () => {
-    if (isSearchFetched) return;
-    try {
-      const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
-      const { db } = await import('@/lib/firebase');
-      const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(100));
-      const snap = await getDocs(q);
-      const docs = snap.docs.map(d => d.data());
-      setLocalSearchProducts(docs);
-      setIsSearchFetched(true);
-    } catch (e) {
-      console.error('Search fetch error', e);
-    }
+    // Relying on Algolia in SearchDropdown instead of client-side Firestore to avoid QUIC timeouts
   };
 
   const handleSelect = (id: string, type: 'product' | 'blog' = 'product') => {
@@ -167,6 +156,22 @@ export function Header({ searchQuery, setSearchQuery, onNavigate, onSearchSelect
               )}
             </div>
 
+            {/* Search Dropdown */}
+            <AnimatePresence>
+              {showDropdown && debouncedQuery.trim() && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden max-h-96 overflow-y-auto">
+                  <Suspense fallback={<div className="p-4 text-center text-slate-400 text-sm">Loading...</div>}>
+                    <SearchDropdown
+                      query={debouncedQuery}
+                      products={localSearchProducts}
+                      blogPosts={blogPosts || []}
+                      onSelect={handleSelect}
+                      priorityView={isBlogView ? 'blog' : 'product'}
+                    />
+                  </Suspense>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Navigation */}

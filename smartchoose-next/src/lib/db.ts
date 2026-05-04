@@ -147,6 +147,11 @@ export async function getProductById(id: string): Promise<Product | null> {
   return data ? ({ id, ...data } as Product) : null;
 }
 
+export async function getJobById(id: string): Promise<any | null> {
+  const data = await firestoreGet(`jobs/${id}`);
+  return data ? ({ id, ...data }) : null;
+}
+
 export async function getBlogBySlug(slug: string): Promise<BlogPost | null> {
   const blogs = await firestoreQuery(
     'blogPosts',
