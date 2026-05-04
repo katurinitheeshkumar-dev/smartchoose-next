@@ -24,8 +24,23 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
   const { isAdmin } = useAdmin();
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as const });
 
-  const productFromContext = getProductById(productId);
-  const product = initialProduct || productFromContext;
+  const [product, setProduct] = useState<any>(initialProduct);
+  const [isFetching, setIsFetching] = useState(false);
+
+  useEffect(() => {
+    if (initialProduct) {
+      setProduct(initialProduct);
+      return;
+    }
+
+    const loadProduct = async () => {
+      setIsFetching(true);
+      const fetched = await getProductById(productId);
+      setProduct(fetched);
+      setIsFetching(false);
+    };
+    loadProduct();
+  }, [productId, initialProduct, getProductById]);
 
   // Auto-detect platform from URL
   const platform = useMemo(() => {
@@ -45,7 +60,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
     };
   }, [productId, product, recordView]);
 
-  if (isInitialLoading) {
+  if (isInitialLoading || isFetching) {
     return (
       <div className="min-h-screen bg-slate-50 pt-40 pb-12 flex flex-col items-center">
         <div className="spinner mb-4" />

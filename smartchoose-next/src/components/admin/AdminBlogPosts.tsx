@@ -76,7 +76,7 @@ function ProductBlockEditor({
   const [fetchUrl, setFetchUrl] = useState(block.smartChooseId || '');
   const [isFetching, setIsFetching] = useState(false);
 
-  const handleFetch = () => {
+  const handleFetch = async () => {
     if (!fetchUrl) return;
     setIsFetching(true);
     let productId = fetchUrl.trim();
@@ -84,7 +84,7 @@ function ProductBlockEditor({
       const match = productId.match(/\/product\/([a-z0-9-]+)/i);
       if (match) productId = match[1];
     }
-    const product = getProductById(productId);
+    const product = await getProductById(productId);
     if (product) {
       onChange({
         ...block,

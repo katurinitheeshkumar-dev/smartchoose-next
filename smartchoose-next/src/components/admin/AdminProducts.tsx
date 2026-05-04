@@ -500,8 +500,9 @@ export function AdminProducts() {
                         <button onClick={(e) => { e.stopPropagation(); handleBroadcast(product.id); }} disabled={isBroadcasting === product.id || !product.published} className={`p-2 rounded-lg ${product.broadcasted ? 'text-green-600 hover:bg-green-50' : 'text-amber-600 hover:bg-amber-50'}`}>
                           {isBroadcasting === product.id ? <Icon name="loader-2" size={16} className="animate-spin" /> : <Icon name="share-2" size={16} />}
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleEdit(product); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"><Icon name="edit" size={16} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(getProductUrl(product.id)); setToast({show:true, message:'Link copied', type:'success'}); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><Icon name="link" size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); window.open(getProductUrl(product.id), '_blank'); }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"><Icon name="eye" size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleEdit(product); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><Icon name="edit" size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(getProductUrl(product.id)); setToast({show:true, message:'Link copied', type:'success'}); }} className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg"><Icon name="link" size={16} /></button>
                         <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(product.id); }} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Icon name="trash-2" size={16} /></button>
                       </div>
                     </td>

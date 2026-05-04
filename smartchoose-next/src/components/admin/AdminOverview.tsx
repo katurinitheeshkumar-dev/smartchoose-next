@@ -8,6 +8,7 @@ import { formatShortTitle } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
 import { AdminAgentControl } from './AdminAgentControl';
+import { db } from '@/lib/firebase';
 
 export function AdminOverview() {
   const { analytics, siteStats, repairStats, fetchInquiries } = useDatabase();
@@ -33,19 +34,38 @@ export function AdminOverview() {
   // Calculate CTR
   const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
 
-  // Get top products by clicks - Use a local state for this later if needed,
-  // but for now we'll keep it empty or limited
-  const topProducts: any[] = [];
-
-  // Get top category
-  const topCategory = ['Other', 0];
-
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [topCategory, setTopCategory] = useState<[string, number]>(['Other', 0]);
   const [newMessages, setNewMessages] = useState(0);
 
   useEffect(() => {
     fetchInquiries().then(data => {
       setNewMessages(data.filter(m => m.status === 'new').length);
     });
+
+    // Fetch Top Products from Firestore
+    const fetchTopData = async () => {
+      try {
+        const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
+        const q = query(collection(db, 'products'), orderBy('clicks', 'desc'), limit(5));
+        const snap = await getDocs(q);
+        const products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setTopProducts(products);
+
+        // Derive top category from these products or a separate query
+        if (products.length > 0) {
+          const cats: Record<string, number> = {};
+          products.forEach((p: any) => {
+            cats[p.category] = (cats[p.category] || 0) + 1;
+          });
+          const top = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+          if (top) setTopCategory([top[0], top[1]]);
+        }
+      } catch (e) {
+        console.warn('Dashboard Top Data Fetch Error:', e);
+      }
+    };
+    fetchTopData();
   }, [fetchInquiries]);
 
   const stats = [

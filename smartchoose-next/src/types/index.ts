@@ -153,7 +153,7 @@ export interface DatabaseContextType {
   updateSocialLink: (id: string, updates: Partial<SocialLink>) => void;
   deleteSocialLink: (id: string) => void;
   getProductUrl: (productId: string) => string;
-  getProductById: (productId: string) => Product | undefined;
+  getProductById: (productId: string) => Promise<Product | undefined>;
   repairStats: () => Promise<boolean>;
   getPlatformFromUrl: (url: string) => { name: string; icon: string; color: string; className: string };
 
@@ -166,7 +166,7 @@ export interface DatabaseContextType {
   addBlog: (blog: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateBlog: (id: string, updates: Partial<BlogPost>) => Promise<void>;
   deleteBlog: (id: string) => Promise<void>;
-  getBlogBySlug: (slug: string) => BlogPost | undefined;
+  getBlogBySlug: (slug: string) => Promise<BlogPost | undefined>;
   // Jobs
   jobs: Job[];
   isJobsLoading: boolean;

@@ -279,8 +279,17 @@ const platformConfigs: Record<string, PlatformInfo> = {
 
 export function detectEcommercePlatform(url: any): PlatformInfo {
   try {
-    if (!url || typeof url !== 'string') throw new Error('Invalid URL');
-    const parsedUrl = new URL(url);
+    if (!url || typeof url !== 'string') return {
+      name: 'Store',
+      icon: 'Store',
+      iconFile: 'generic.svg',
+      color: '#6B7280',
+      className: 'platform-generic'
+    };
+
+    // Ensure protocol for URL constructor
+    const safeUrl = ensureAbsoluteUrl(url);
+    const parsedUrl = new URL(safeUrl);
     const domain = parsedUrl.hostname.replace('www.', '').toLowerCase();
 
     // Exact or partial domain matching
@@ -324,7 +333,8 @@ export function detectPlatform(url: string): { name: string; icon: string; color
   };
 
   try {
-    const domain = new URL(url).hostname.replace('www.', '');
+    const safeUrl = ensureAbsoluteUrl(url);
+    const domain = new URL(safeUrl).hostname.replace('www.', '');
     for (const [key, value] of Object.entries(platforms)) {
       if (domain.includes(key)) return value;
     }

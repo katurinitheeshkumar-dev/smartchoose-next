@@ -358,8 +358,22 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, [products, syncAlgolia]);
 
-  const getProductById = useCallback((productId: string): Product | undefined => {
-    return products.find(p => p.id === productId);
+  const getProductById = useCallback(async (productId: string): Promise<Product | undefined> => {
+    // Check local state first (sync context)
+    const local = products.find(p => p.id === productId);
+    if (local) return local;
+
+    // Fallback: Fetch from Firestore directly
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const snap = await getDoc(doc(db, 'products', productId));
+      if (snap.exists()) {
+        return { id: snap.id, ...snap.data() } as Product;
+      }
+    } catch (err) {
+      console.warn('Product Fetch Error (Direct):', err);
+    }
+    return undefined;
   }, [products]);
 
   // Platform detection helper
@@ -442,25 +456,44 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     statusFilter: string = 'all'
   ) => {
     try {
-      
-      
       let q;
-      if (searchTerm) {
-        // Prefix search (simple Firestore approach)
-        q = query(
-          collection(db, 'products'),
-          where('title', '>=', searchTerm),
-          where('title', '<=', searchTerm + '\uf8ff'),
-          limit(pageSize)
-        );
-      } else {
-        const constraints: any[] = [orderBy('createdAt', 'desc'), limit(pageSize)];
-        if (statusFilter === 'published') constraints.unshift(where('published', '==', true));
-        if (lastVisible) constraints.push(startAfter(lastVisible));
-        
-        q = query(collection(db, 'products'), ...(constraints as any));
+      const constraints: any[] = [orderBy('createdAt', 'desc'), limit(pageSize)];
+      
+      if (statusFilter === 'published') {
+        constraints.push(where('published', '==', true));
+      }
+      
+      if (lastVisible && !searchTerm) {
+        constraints.push(startAfter(lastVisible));
       }
 
+      // If search term is provided, we might need a different approach 
+      // but for now let's use the basic one with an improvement
+      if (searchTerm) {
+        // We use a broader query and filter client-side for better search experience 
+        // since Firestore prefix search is very limited
+        const searchQ = query(
+          collection(db, 'products'),
+          limit(100) // Fetch more to filter
+        );
+        const snap = await getDocs(searchQ);
+        const term = searchTerm.toLowerCase();
+        const filtered = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Product))
+          .filter(p => 
+            p.title?.toLowerCase().includes(term) || 
+            p.brand?.toLowerCase().includes(term) || 
+            p.category?.toLowerCase().includes(term)
+          );
+        
+        return {
+          products: filtered.slice(0, pageSize),
+          lastVisible: null,
+          totalCount: filtered.length
+        };
+      }
+
+      q = query(collection(db, 'products'), ...constraints);
       const snap = await getDocs(q);
       const docs = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as Product));
       const lastDoc = snap.docs[snap.docs.length - 1];
@@ -587,8 +620,24 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     recordGlobalStat('totalBlogs', -1);
   }, [recordGlobalStat]);
 
-  const getBlogBySlug = useCallback((slug: string): BlogPost | undefined => {
-    return blogPosts.find(b => b.slug === slug);
+  const getBlogBySlug = useCallback(async (slug: string): Promise<BlogPost | undefined> => {
+    // Check local cache first
+    const local = blogPosts.find(b => b.slug === slug);
+    if (local) return local;
+
+    // Fallback: Direct Firestore query by slug
+    try {
+      const { query, collection, where, limit, getDocs } = await import('firebase/firestore');
+      const q = query(collection(db, 'blogPosts'), where('slug', '==', slug), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        return { id: d.id, ...d.data() } as BlogPost;
+      }
+    } catch (err) {
+      console.warn('Blog Fetch Error (Direct):', err);
+    }
+    return undefined;
   }, [blogPosts]);
 
 

@@ -216,8 +216,23 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
   const [showTopButton, setShowTopButton] = useState(false);
   const [showStickyCta, setShowStickyCta] = useState(false);
 
-  // Use initialPost from server or fetch from client context
-  const post = initialPost || getBlogBySlug(slug || '');
+  const [post, setPost] = useState<BlogPost | undefined>(initialPost);
+  const [isFetching, setIsFetching] = useState(false);
+
+  useEffect(() => {
+    if (initialPost) {
+      setPost(initialPost);
+      return;
+    }
+
+    const loadPost = async () => {
+      setIsFetching(true);
+      const fetched = await getBlogBySlug(slug || '');
+      setPost(fetched);
+      setIsFetching(false);
+    };
+    loadPost();
+  }, [slug, initialPost, getBlogBySlug]);
   const siteUrl = settings.siteUrl || 'https://smartchoose.in';
 
   // Handle Scroll Progress, Top Button & Sticky CTA
@@ -265,7 +280,7 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [post]);
 
-  if (isInitialLoading) {
+  if (isInitialLoading || isFetching) {
     return (
       <div className="min-h-screen bg-slate-50 pt-40 flex flex-col items-center">
         <div className="spinner mb-4" />
