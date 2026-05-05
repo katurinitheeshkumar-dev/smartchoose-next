@@ -10,8 +10,16 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.smartchoose.in"),
   title: "SmartChoose - Premium Product Discovery",
   description: "Discover Premium Products | Compare & Shop Smart",
+  icons: {
+    icon: [
+      { url: '/logo.png' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({

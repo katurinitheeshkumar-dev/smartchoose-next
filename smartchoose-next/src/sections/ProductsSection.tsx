@@ -264,7 +264,7 @@ export function ProductsSection({
         />
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 content-visibility-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           {isInitialLoading ? (
             Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)
           ) : (
@@ -281,9 +281,6 @@ export function ProductsSection({
                   onClick={() => onProductClick(product.id)}
                 />
               ))}
-              {isBatchLoading && (
-                Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={`batch-skeleton-${i}`} />)
-              )}
             </>
           )}
         </div>
@@ -292,12 +289,12 @@ export function ProductsSection({
         {!isInitialLoading && hasMore && (
           <div 
             ref={observerTarget} 
-            className="h-20 flex items-center justify-center mt-8"
+            className="h-32 flex items-center justify-center mt-8"
           >
-            {!isBatchLoading && (
-               <div className="flex flex-col items-center gap-2 text-slate-400">
-                  <Icon name="loader-2" size={24} className="animate-spin" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Scroll for more...</span>
+            {(isBatchLoading || true) && (
+               <div className="flex flex-col items-center gap-3 text-slate-400">
+                  <Icon name="loader-2" size={28} className="animate-spin text-emerald-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 animate-pulse">Loading amazing deals...</span>
                </div>
             )}
           </div>

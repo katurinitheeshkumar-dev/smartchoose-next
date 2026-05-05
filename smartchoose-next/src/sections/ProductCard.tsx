@@ -1,3 +1,4 @@
+"use client";
 import { useRef, useEffect, useMemo } from 'react';
 import { Icon } from '@/components/ui/custom/Icon';
 import { ProductImage } from '@/components/ui/custom/ProductImage';
@@ -5,6 +6,8 @@ import { useDatabase } from '@/contexts/DatabaseContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { formatPrice, parsePrice, getPlatformByName, detectEcommercePlatform } from '../lib/utils';
 import { PlatformIcon } from '@/components/ui/custom/PlatformIcon';
+
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   product: {
@@ -33,6 +36,7 @@ interface ProductCardProps {
 export function ProductCard({ product, highlighted = false, onCopy, onClick }: ProductCardProps) {
   const { recordClick, getProductUrl } = useDatabase();
   const { isAdmin } = useAdmin();
+  const router = useRouter();
   const cardRef = useRef<HTMLDivElement>(null);
   const mainImage = product.images?.[0] || 'https://via.placeholder.com/600?text=No+Image';
 
@@ -61,6 +65,17 @@ export function ProductCard({ product, highlighted = false, onCopy, onClick }: P
     const url = getProductUrl(product.id);
     navigator.clipboard.writeText(url);
     onCopy?.();
+  };
+
+  const prefetched = useRef(false);
+
+  const handleMouseEnter = () => {
+    if (!prefetched.current && product.id) {
+      const url = `/product/${product.id}`;
+      // Next.js router.prefetch is very efficient
+      router.prefetch(url);
+      prefetched.current = true;
+    }
   };
 
   const handleCardClick = () => {
@@ -95,6 +110,7 @@ export function ProductCard({ product, highlighted = false, onCopy, onClick }: P
       className={`group relative bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover-lift cursor-pointer transition-all duration-500 gpu-accelerate ${highlighted ? 'product-highlight ring-2 ring-emerald-500 border-emerald-500' : ''
         }`}
       onClick={handleCardClick}
+      onMouseEnter={handleMouseEnter}
     >
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-white border-b border-slate-100">
