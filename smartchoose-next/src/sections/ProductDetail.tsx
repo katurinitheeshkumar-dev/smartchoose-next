@@ -89,10 +89,12 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
     );
   }
 
+  const siteUrl = 'https://www.smartchoose.in';
+  const productUrl = `${siteUrl}/product/${product.id}`;
+
   const handleCopyLink = () => {
     if (typeof navigator === 'undefined') return;
-    const url = getProductUrl(product.id);
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(productUrl);
     setToast({ show: true, message: 'Link copied to clipboard!', type: 'success' });
   };
 
@@ -100,8 +102,6 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
     ? product.images 
     : ['https://via.placeholder.com/600?text=No+Image'];
 
-  const siteUrl = 'https://www.smartchoose.in';
-  const productUrl = `${siteUrl}/product/${product.id}`;
   const productImage = (product.images && product.images[0]) || `${siteUrl}/logo.png`;
   const seoTitle = product.seoTitle || `${product.title} | SmartChoose`;
   const seoDesc = product.seoDescription || `${product.description?.slice(0, 155)}...`;
