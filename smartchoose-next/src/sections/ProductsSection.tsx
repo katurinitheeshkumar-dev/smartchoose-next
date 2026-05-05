@@ -6,6 +6,7 @@ import { useDatabase } from '@/contexts/DatabaseContext';
 import { Toast } from '@/components/ui/custom/Toast';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationPopup } from '@/components/ui/custom/NotificationPopup';
+import { useSearch } from '@/contexts/SearchContext';
 
 interface ProductsSectionProps {
   searchQuery: string;
@@ -34,10 +35,9 @@ export function ProductsSection({
   highlightedProduct,
   onProductClick
 }: ProductsSectionProps & { initialProducts?: any[] }) {
-  // We still need useDatabase for some context, but we will manage products locally
+  const { selectedCategory, setSelectedCategory } = useSearch();
   const { isProductsLoading: contextLoading } = useDatabase();
   const [localProducts, setLocalProducts] = useState<any[]>(initialProducts);
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [isBatchLoading, setIsBatchLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(initialProducts.length === 0);
   const [hasMore, setHasMore] = useState(true);
@@ -208,7 +208,8 @@ export function ProductsSection({
     if (searchQuery && filteredProducts.length > 0) {
       const element = document.getElementById('products-section');
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Changed to 'instant' as per user feedback to remove annoying scroll animation
+        element.scrollIntoView({ behavior: 'instant', block: 'start' });
       }
     }
   }, [searchQuery, filteredProducts.length]);

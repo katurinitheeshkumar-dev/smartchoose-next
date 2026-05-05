@@ -23,9 +23,9 @@ export function Footer() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({ behavior: 'instant' });
     } else if (id === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
 
@@ -91,7 +91,7 @@ export function Footer() {
               <li>
                 <a
                   href="/about"
-                  onClick={(e) => { e.preventDefault(); router.push('/about'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/about'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   About
@@ -100,7 +100,7 @@ export function Footer() {
               <li>
                 <a
                   href="/blog"
-                  onClick={(e) => { e.preventDefault(); router.push('/blog'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/blog'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors text-emerald-400 font-semibold cursor-pointer"
                 >
                   Blog
@@ -109,7 +109,7 @@ export function Footer() {
               <li>
                 <a
                   href="/jobs"
-                  onClick={(e) => { e.preventDefault(); router.push('/jobs'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/jobs'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors text-emerald-400 font-semibold cursor-pointer"
                 >
                   Job Alerts
@@ -118,7 +118,7 @@ export function Footer() {
               <li>
                 <a
                   href="/sitemap"
-                  onClick={(e) => { e.preventDefault(); router.push('/sitemap'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/sitemap'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   Sitemap
@@ -127,7 +127,7 @@ export function Footer() {
               <li>
                 <a
                   href="/contact"
-                  onClick={(e) => { e.preventDefault(); router.push('/contact'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/contact'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   Contact Us
@@ -142,7 +142,7 @@ export function Footer() {
               <li>
                 <a
                   href="/privacy"
-                  onClick={(e) => { e.preventDefault(); router.push('/privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/privacy'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   Privacy Policy
@@ -151,7 +151,7 @@ export function Footer() {
               <li>
                 <a
                   href="/terms"
-                  onClick={(e) => { e.preventDefault(); router.push('/terms'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/terms'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   Terms of Service
@@ -160,7 +160,7 @@ export function Footer() {
               <li>
                 <a
                   href="/disclosure"
-                  onClick={(e) => { e.preventDefault(); router.push('/disclosure'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/disclosure'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   Affiliate Disclosure
@@ -169,7 +169,7 @@ export function Footer() {
               <li>
                 <a
                   href="/returns"
-                  onClick={(e) => { e.preventDefault(); router.push('/returns'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={(e) => { e.preventDefault(); router.push('/returns'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   Shipping & Return Policy
@@ -201,8 +201,8 @@ export function Footer() {
         <div className="border-t border-slate-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-400 text-sm">{settings.footerContent}</p>
           <div className="flex gap-6 text-sm text-slate-400">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

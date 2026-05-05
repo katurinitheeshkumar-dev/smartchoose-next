@@ -3,6 +3,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import React from 'react';
 import Image from 'next/image';
+import { useSearch } from '@/contexts/SearchContext';
 
 const categories = [
   { id: 'mobiles', name: 'Mobiles', icon: 'smartphone', color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -14,6 +15,7 @@ const categories = [
 
 export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] }) {
   const { blogPosts = [] } = useDatabase();
+  const { setSelectedCategory } = useSearch();
   const [currentSlide, setCurrentSlide] = React.useState(0);
   
   // Use initial products from server
@@ -60,11 +62,18 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
     const element = document.getElementById('products-section');
     if (element) {
       const topOffset = element.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top: topOffset, behavior: 'smooth' });
+      window.scrollTo({ top: topOffset, behavior: 'instant' });
       
       if (category) {
-        const event = new CustomEvent('filter-category', { detail: category });
-        window.dispatchEvent(event);
+        // Map common category names to full names used in DB
+        const catMap: Record<string, string> = {
+          'mobiles': 'Smartphones & Accessories',
+          'laptops': 'Laptops & Computers',
+          'electronics': 'Home Appliances',
+          'fashion': 'Fashion',
+          'home': 'Home & Kitchen'
+        };
+        setSelectedCategory(catMap[category] || category);
       }
     }
   };

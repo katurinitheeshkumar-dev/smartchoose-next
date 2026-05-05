@@ -170,7 +170,8 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* Removed smooth scroll to prevent annoying jumps on back navigation */
+  scroll-behavior: auto;
 }
 
 /* Custom Scrollbar */
