@@ -25,9 +25,18 @@ export async function generateMetadata(
     };
   }
 
+  const baseUrl = 'https://www.smartchoose.in';
   const title = product.seoTitle || `${product.title} | SmartChoose`;
   const description = product.seoDescription || product.description?.slice(0, 155) || '';
-  const image = product.images?.[0] || 'https://smartchoose.in/logo.png';
+  
+  // Ensure image is absolute and uses HTTPS
+  let image = product.images?.[0];
+  if (image && typeof image === 'string') {
+    if (image.startsWith('//')) image = 'https:' + image;
+    if (image.startsWith('http://')) image = image.replace('http://', 'https://');
+  } else {
+    image = `${baseUrl}/logo.png`;
+  }
 
   return {
     title,
@@ -35,8 +44,14 @@ export async function generateMetadata(
     openGraph: {
       title,
       description,
-      images: [image],
+      images: [{
+        url: image,
+        width: 1200,
+        height: 630,
+        alt: title
+      }],
       type: 'website',
+      url: `${baseUrl}/product/${id}`,
     },
     twitter: {
       card: 'summary_large_image',
