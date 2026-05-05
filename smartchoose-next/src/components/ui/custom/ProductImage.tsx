@@ -21,7 +21,7 @@ export function ProductImage({ src, alt, className = '', fallbackClassName = '',
   }, [src]);
 
   // Force HTTPS to prevent mixed-content blocked errors
-  const safeSrc = src ? src.replace('http://', 'https://') : '';
+  const safeSrc = (src && typeof src === 'string') ? src.replace('http://', 'https://') : (typeof src === 'string' ? '' : '');
   const isPriority = fetchPriority === 'high';
 
   if (!safeSrc || error) {

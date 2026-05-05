@@ -26,8 +26,10 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
 
   const [product, setProduct] = useState<any>(initialProduct);
   const [isFetching, setIsFetching] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     if (initialProduct) {
       setProduct(initialProduct);
       return;
@@ -51,16 +53,14 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
   }, [product?.affiliateLink]);
 
   useEffect(() => {
-    const originalTitle = document.title;
+    if (!isMounted || !product) return;
+    
     if (product) {
       recordView(product.id);
     }
-    return () => {
-      document.title = originalTitle;
-    };
-  }, [productId, product, recordView]);
+  }, [productId, product, recordView, isMounted]);
 
-  if (isInitialLoading || isFetching) {
+  if ((isInitialLoading && !initialProduct) || isFetching) {
     return (
       <div className="min-h-screen bg-slate-50 pt-40 pb-12 flex flex-col items-center">
         <div className="spinner mb-4" />
@@ -90,6 +90,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
   }
 
   const handleCopyLink = () => {
+    if (typeof navigator === 'undefined') return;
     const url = getProductUrl(product.id);
     navigator.clipboard.writeText(url);
     setToast({ show: true, message: 'Link copied to clipboard!', type: 'success' });
@@ -99,9 +100,9 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
     ? product.images 
     : ['https://via.placeholder.com/600?text=No+Image'];
 
-  const siteUrl = 'https://smartchoose.in';
+  const siteUrl = 'https://www.smartchoose.in';
   const productUrl = `${siteUrl}/product/${product.id}`;
-  const productImage = product.images?.[0] || `${siteUrl}/logo.png`;
+  const productImage = (product.images && product.images[0]) || `${siteUrl}/logo.png`;
   const seoTitle = product.seoTitle || `${product.title} | SmartChoose`;
   const seoDesc = product.seoDescription || `${product.description?.slice(0, 155)}...`;
 
@@ -122,9 +123,9 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
       availability: 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
     },
-    aggregateRating: product.reviews > 0 ? {
+    aggregateRating: (product.reviews && product.reviews > 0) ? {
       '@type': 'AggregateRating',
-      ratingValue: product.rating,
+      ratingValue: product.rating || 5,
       reviewCount: product.reviews,
     } : undefined,
   };
@@ -134,7 +135,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-      { '@type': 'ListItem', position: 2, name: product.category, item: `${siteUrl}?category=${encodeURIComponent(product.category)}` },
+      { '@type': 'ListItem', position: 2, name: product.category || 'Product', item: `${siteUrl}?category=${encodeURIComponent(product.category || 'General')}` },
       { '@type': 'ListItem', position: 3, name: product.fullTitle || product.title, item: productUrl }
     ]
   };
@@ -249,10 +250,10 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <Icon name="star" size={20} className="text-amber-400 fill-amber-400" />
-                <span className="font-bold text-lg text-slate-900">{product.rating}</span>
+                <span className="font-bold text-lg text-slate-900">{product.rating || 5}</span>
               </div>
               <span className="text-slate-400">|</span>
-              <span className="text-slate-600">{product.reviews.toLocaleString()} reviews</span>
+              <span className="text-slate-600">{(product.reviews || 0).toLocaleString()} reviews</span>
               {isAdmin && (
                 <>
                   <span className="text-slate-400">|</span>

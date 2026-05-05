@@ -17,113 +17,73 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
   const [status, setStatus] = useState('');
   const [apiKey, setApiKey] = useState(settings.geminiApiKey || '');
   const [showKeyInput, setShowKeyInput] = useState(!settings.geminiApiKey);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const handleGenerate = async () => {
-    if (!title.trim()) return;
-    if (!apiKey.trim()) {
+    if (!title.trim() || !apiKey.trim()) {
       setShowKeyInput(true);
       return;
     }
 
     setIsGenerating(true);
-    setStatus('Analyzing title and SEO keywords...');
-
+    setStatus('Initializing Durable Workflow...');
+    
     try {
-      // 1. Save API key if it's new
-      if (apiKey !== settings.geminiApiKey) {
-        await updateSettings({ geminiApiKey: apiKey });
-      }
-
-      // 2. Call Gemini API
-      setStatus('Generating high-quality SEO content...');
-      
-      const prompt = `
-        You are a professional SEO content writer. Generate a comprehensive blog post in JSON format for the title: "${title}".
-        Style: ${style}
-        Language: English (Professional)
-        
-        Requirements:
-        - 100% SEO Optimized.
-        - Engaging Intro.
-        - At least 3-5 product-style blocks if applicable (with name, description, pros).
-        - Detailed conclusion.
-        - Meta description and SEO title.
-        - Tags (comma separated).
-        
-        The JSON structure MUST be:
-        {
-          "title": "Full engaging title",
-          "slug": "url-friendly-slug",
-          "category": "One of: Gadgets, Phones, Laptops, Lifestyle, Deals",
-          "intro": "Engaging introduction paragraph",
-          "content": "Detailed HTML content for the body",
-          "seoTitle": "SEO title (60 chars)",
-          "seoDescription": "Meta description (155 chars)",
-          "tags": ["tag1", "tag2"],
-          "products": [
-            {
-              "name": "Product Name",
-              "description": "Short review",
-              "pros": ["Pro 1", "Pro 2"],
-              "price": "Approx Price (e.g. ₹19,999)",
-              "affiliateLink": ""
-            }
-          ]
-        }
-      `;
-
-      // Try Gemini 2.0 Flash, fallback to 1.5 Flash
-      let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      // 1. Start the workflow
+      const startRes = await fetch('/api/workflows/generate-blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { response_mime_type: "application/json" }
+        body: JSON.stringify({ 
+          title, 
+          style, 
+          apiKey: apiKey.trim(),
+          secretKey: 'optional-secret' // In real app, this would be from env
         })
       });
 
-      if (!response.ok) {
-        // Fallback to 1.5 Flash
-        console.warn('Gemini 2.0 failed, trying 1.5 Flash...');
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { response_mime_type: "application/json" }
-          })
-        });
+      if (!startRes.ok) {
+        const err = await startRes.json();
+        throw new Error(err.error || 'Failed to start workflow');
       }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.error?.message || `API Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        throw new Error('Empty response from AI model');
-      }
-
-      const generatedJson = JSON.parse(data.candidates[0].content.parts[0].text);
-
-      // 3. Generate a high-quality AI image using Pollinations.ai
-      setStatus('Generating high-quality AI images...');
-      const imagePrompt = `High quality professional photography for blog post about ${generatedJson.title}, cinematic lighting, 8k resolution, commercial style`;
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1200&height=800&nologo=true&seed=${Math.floor(Math.random() * 1000)}`;
+      const { runId } = await startRes.json();
       
-      generatedJson.featuredImage = imageUrl;
-      generatedJson.status = 'draft';
+      // 2. Poll for status
+      const pollStatus = async () => {
+        try {
+          const statusRes = await fetch(`/api/workflows/status?runId=${runId}`);
+          const data = await statusRes.json();
 
-      setStatus('Finalizing blog post...');
-      setTimeout(() => {
-        onGenerated(generatedJson);
-        setIsGenerating(false);
-      }, 1000);
+          if (data.status === 'COMPLETED') {
+            setStatus('Success! Finalizing...');
+            onGenerated(data.output);
+            setIsGenerating(false);
+            return;
+          }
+
+          if (data.status === 'FAILED') {
+            throw new Error(data.error || 'Workflow failed');
+          }
+
+          // Update status message based on current steps
+          const lastStep = data.steps?.filter((s: any) => s.type === 'step').pop();
+          if (lastStep) {
+            setStatus(`Running: ${lastStep.name || 'Processing'}...`);
+          }
+
+          // Poll again in 2 seconds
+          setTimeout(pollStatus, 2000);
+        } catch (err: any) {
+          alert(`Generation failed: ${err.message}`);
+          setIsGenerating(false);
+        }
+      };
+
+      pollStatus();
 
     } catch (err: any) {
       console.error('Generation failed:', err);
-      alert(`Generation failed: ${err.message || 'Please check your API key and try again.'}`);
+      alert(`Generation failed: ${err.message}`);
       setIsGenerating(false);
     }
   };
@@ -152,25 +112,55 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
 
         <div className="p-8 space-y-6">
           {showKeyInput && (
-            <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 mb-4">
-              <label className="block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-2">Gemini API Key</label>
+            <div className="bg-emerald-50 p-6 rounded-3xl border-2 border-emerald-100 mb-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-emerald-700 uppercase tracking-widest">Gemini API Key</label>
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 underline flex items-center gap-1"
+                >
+                  <Icon name="external-link" size={10} />
+                  Get Key from AI Studio
+                </a>
+              </div>
               <div className="flex gap-2">
                 <input
                   type="password"
                   value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Paste your Gemini API key here..."
-                  className="flex-1 px-4 py-2 rounded-xl border border-emerald-200 text-sm font-mono"
+                  onChange={(e) => setApiKey(e.target.value.trim())}
+                  placeholder="Paste your key here..."
+                  className="flex-1 px-4 py-3 rounded-xl border-2 border-emerald-200 text-sm font-mono focus:outline-none focus:border-emerald-500 transition-all"
                 />
                 <button 
-                  onClick={() => setShowKeyInput(false)}
-                  className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl"
+                  onClick={async () => {
+                    if (!apiKey) return alert('Please enter a key first');
+                    try {
+                      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] })
+                      });
+                      if (res.ok) {
+                        alert('✅ API Key is valid and working!');
+                        await updateSettings({ geminiApiKey: apiKey });
+                        setShowKeyInput(false);
+                      } else {
+                        const data = await res.json();
+                        alert(`❌ Invalid Key: ${data.error?.message || 'Please check your key'}`);
+                      }
+                    } catch (e) {
+                      alert('❌ Connection failed. Check your internet.');
+                    }
+                  }}
+                  className="px-6 py-3 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
                 >
-                  Save Key
+                  Verify & Save
                 </button>
               </div>
-              <p className="text-[10px] text-emerald-600 mt-2">
-                * Your key is stored securely in your settings. Get it from <a href="https://aistudio.google.com/app/apikey" target="_blank" className="underline">Google AI Studio</a>.
+              <p className="text-[10px] text-emerald-500 italic">
+                * Trimming whitespace automatically. Please ensure billing is enabled in AI Studio for higher limits.
               </p>
             </div>
           )}

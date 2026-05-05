@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const SITE_URL = 'https://smartchoose.in';
+  const SITE_URL = 'https://www.smartchoose.in';
   const FIREBASE_PROJECT_ID = 'smartchoose-official'; // Unified to official project
   
   try {

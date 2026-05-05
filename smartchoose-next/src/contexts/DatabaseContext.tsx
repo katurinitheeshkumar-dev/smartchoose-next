@@ -21,7 +21,7 @@ const defaultSettings: Settings = {
   address: "Hyderabad, Telangana, India",
   aboutContent: "SmartChoose is India's premier product discovery platform. We curate the finest products from top e-commerce stores to help you make informed purchasing decisions. Compare prices, read reviews, and shop with confidence.",
   footerContent: "© 2024 SmartChoose. All rights reserved. Your trusted product discovery partner.",
-  siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://smartchoose.in',
+  siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://www.smartchoose.in',
   footerLogo: "/logo-white.png",
   contactEmail: "hello@smartchoose.in",
   contactPhone: "+91 98765 43210",
