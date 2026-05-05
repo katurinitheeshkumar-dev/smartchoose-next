@@ -311,72 +311,108 @@ export function AdminProducts() {
     }
   };
 
-  const handlePasteExtensionData = async () => {
+  const handleExtensionPaste = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      if (!text) return setToast({ show: true, message: 'Clipboard is empty.', type: 'error' });
+      const clipboardText = await navigator.clipboard.readText();
+      const data = JSON.parse(clipboardText);
       
-      let data;
-      try { data = JSON.parse(text); } catch (e) { return setToast({ show: true, message: 'Invalid extension data in clipboard.', type: 'error' }); }
-      if (!Array.isArray(data) || data.length === 0) return setToast({ show: true, message: 'No products found in clipboard.', type: 'error' });
-
-      setToast({ show: true, message: `Scanning ${data.length} products...`, type: 'info' });
-      
-      let addedCount = 0;
-      
-      for (let item of data) {
-        const platformObj = detectEcommercePlatform(item.affiliateLink || '');
-        if (item.needsEnrichment && item.affiliateLink) {
-          try {
-            const enrichRes = await fetch('https://smartchoose-proxy.vercel.app/api/fetch-product', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url: item.affiliateLink })
-            });
-            const enrichData = await enrichRes.json();
-            if (enrichData.success && enrichData.data) {
-              item = { ...item, ...enrichData.data, title: enrichData.data.title || item.title };
-            }
-          } catch (e) { console.warn("Auto-enrich failed for " + item.title); }
-        }
-        
-        const displayTitle = item.fullTitle || item.title || '';
-        const finalData = {
-          title: displayTitle,
-          fullTitle: displayTitle,
-          description: item.description || '',
-          price: item.price || '',
-          originalPrice: item.originalPrice || '',
-          discount: item.discount || '',
-          category: item.category || 'Electronics',
-          brand: item.brand || '',
-          platform: item.platform || platformObj.name,
-          images: item.images && item.images.length > 0 ? item.images : [item.image].filter(Boolean),
-          rating: item.rating || 4.5,
-          reviews: item.reviews || 0,
-          features: item.features || [],
-          specifications: item.specifications || {},
-          pros: item.pros || [],
-          published: true,
-          affiliateLink: item.isOfficial ? item.affiliateLink : cleanAffiliateLink(item.affiliateLink || ''),
-          affiliateLinks: [{
-            url: item.isOfficial ? item.affiliateLink : cleanAffiliateLink(item.affiliateLink || ''),
-            platform: platformObj.name,
-            icon: platformObj.iconFile || 'generic.svg',
-            price: item.price || ''
-          }]
-        };
-
-        await addProduct(finalData);
-        addedCount++;
+      if (!data.title && !data.price) {
+        throw new Error("Invalid extension data format.");
       }
-      
-      setToast({ show: true, message: `Successfully imported ${addedCount} products!`, type: 'success' });
-      loadProducts(1);
-    } catch (e) {
-      console.error(e);
-      setToast({ show: true, message: 'Failed to paste. Please check clipboard permissions.', type: 'error' });
+
+      setFormData(prev => ({
+        ...prev,
+        title: data.title || prev.title,
+        fullTitle: data.title || prev.fullTitle,
+        description: data.description || prev.description,
+        price: data.price || prev.price,
+        originalPrice: data.originalPrice || prev.originalPrice,
+        discount: data.discount || prev.discount,
+        brand: data.brand || prev.brand,
+        images: data.images?.length > 0 ? data.images : prev.images,
+        features: data.features?.length > 0 ? data.features : prev.features,
+        specifications: data.specifications || prev.specifications
+      }));
+
+      setToast({ show: true, message: 'Extension Data Imported!', type: 'success' });
+    } catch (err) {
+      const manualJson = prompt("Please paste the JSON data from the extension here:");
+      if (manualJson) {
+        try {
+           const data = JSON.parse(manualJson);
+           setFormData(prev => ({
+            ...prev,
+            title: data.title || prev.title,
+            fullTitle: data.title || prev.fullTitle,
+            description: data.description || prev.description,
+            price: data.price || prev.price,
+            brand: data.brand || prev.brand,
+            images: data.images?.length > 0 ? data.images : prev.images,
+            features: data.features?.length > 0 ? data.features : prev.features,
+            specifications: data.specifications || prev.specifications
+          }));
+          setToast({ show: true, message: 'Extension Data Imported!', type: 'success' });
+        } catch (e) {
+          setToast({ show: true, message: 'Invalid JSON format.', type: 'error' });
+        }
+      }
     }
+  };
+
+  const [bulkImportUrls, setBulkImportUrls] = useState('');
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
+
+  const handleBulkImport = async () => {
+    const urls = bulkImportUrls.split('\n').map(u => u.trim()).filter(u => u.length > 5);
+    if (urls.length === 0) return;
+    
+    setIsBulkImporting(true);
+    setToast({ show: true, message: `AI is processing ${urls.length} products...`, type: 'info' });
+    
+    let successCount = 0;
+    for (const url of urls) {
+      try {
+        const res = await fetch('https://smartchoose-proxy.vercel.app/api/fetch-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        if (data.success && data.data) {
+          const platform = detectEcommercePlatform(url);
+          const finalData = {
+            title: data.data.fullTitle || data.data.title || 'Product',
+            fullTitle: data.data.fullTitle || data.data.title || '',
+            description: data.data.description || '',
+            price: data.data.price || '',
+            originalPrice: data.data.originalPrice || '',
+            discount: data.data.discount || '',
+            category: data.data.category || 'Electronics',
+            brand: data.data.brand || '',
+            platform: platform.name,
+            images: data.data.images || [data.data.image].filter(Boolean),
+            rating: data.data.rating || 4.5,
+            reviews: data.data.reviews || 0,
+            features: data.data.features || [],
+            specifications: data.data.specifications || {},
+            published: true,
+            affiliateLink: cleanAffiliateLink(url),
+            affiliateLinks: [{ url: cleanAffiliateLink(url), platform: platform.name, icon: platform.iconFile || 'generic.svg', price: data.data.price }]
+          };
+          await addProduct(finalData as any);
+          successCount++;
+        }
+      } catch (e) {
+        console.error(`Bulk import failed for ${url}`, e);
+      }
+    }
+    
+    setIsBulkImporting(false);
+    setShowBulkImport(false);
+    setBulkImportUrls('');
+    setToast({ show: true, message: `Successfully imported ${successCount} products!`, type: 'success' });
+    loadProducts(1);
   };
 
   const [activeTab, setActiveTab] = useState<'general' | 'media' | 'specs' | 'seo'>('general');
@@ -407,45 +443,59 @@ export function AdminProducts() {
     }
   };
 
-  const handleSyncPrices = async () => {
-    if (!window.confirm('Sync prices for the oldest 20 products? This may take ~30 seconds.')) return;
-    setToast({ show: true, message: '🔄 Syncing prices from servers...', type: 'info' });
-    try {
-      const res = await fetch('https://smartchoose-proxy.vercel.app/api/cron/price-sync.js');
-      const data = await res.json();
-      if (data.success) {
-        setToast({ show: true, message: `✅ Synced ${data.synced} products!`, type: 'success' });
-        loadProducts(currentPage);
-      } else {
-        setToast({ show: true, message: '❌ Sync failed: ' + (data.error || 'Unknown error'), type: 'error' });
-      }
-    } catch (err: any) {
-      setToast({ show: true, message: '❌ Network error during sync.', type: 'error' });
-    }
-  };
-
   return (
     <div className="p-6 max-w-[1400px] mx-auto min-h-screen">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="text-3xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
             <Icon name="package" size={32} className="text-emerald-500" />
-            Product Management
+            Inventory Manager
           </h1>
-          <p className="text-slate-500 mt-1 font-medium italic">High-performance monetization dashboard ({siteStats.totalProducts} total)</p>
+          <p className="text-slate-500 mt-1 font-bold text-xs uppercase tracking-widest opacity-60">High-Performance Affiliate Hub ({siteStats.totalProducts} items)</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button onClick={handlePasteExtensionData} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20">
-            <Icon name="clipboard" size={20} /> Paste Extension Data
+          <button onClick={() => setShowBulkImport(true)} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20">
+            <Icon name="zap" size={16} className="text-emerald-400" /> AI Bulk Import
           </button>
-          <button onClick={handleSyncPrices} className="border-2 border-emerald-500 text-emerald-600 px-6 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-emerald-50 transition-all flex items-center gap-2">
-            <Icon name="refresh-cw" size={14} /> Sync Prices
-          </button>
-          <button onClick={() => setShowModal(true)} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20">
-            <Icon name="plus" size={20} /> Add Product
+          <button onClick={() => setShowModal(true)} className="bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-xl shadow-emerald-500/30">
+            <Icon name="plus" size={18} /> New Product
           </button>
         </div>
       </div>
+
+      {/* Bulk Import Modal */}
+      <AnimatePresence>
+        {showBulkImport && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isBulkImporting && setShowBulkImport(false)} className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" />
+            <m.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl p-8 border border-slate-100">
+               <h2 className="text-2xl font-black text-slate-900 mb-2">AI Bulk Import</h2>
+               <p className="text-sm text-slate-500 mb-6">Paste multiple URLs (Amazon, Flipkart, etc.) separated by new lines. Our agent will extract everything automatically.</p>
+               
+               <textarea 
+                  rows={8}
+                  disabled={isBulkImporting}
+                  value={bulkImportUrls}
+                  onChange={e => setBulkImportUrls(e.target.value)}
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 font-mono text-xs focus:border-emerald-500 focus:bg-white transition-all outline-none mb-6"
+                  placeholder="https://amazon.in/dp/B08L5VFXS7&#10;https://flipkart.com/p/itme..."
+               />
+
+               <div className="flex gap-3">
+                 <button onClick={() => setShowBulkImport(false)} disabled={isBulkImporting} className="flex-1 py-4 font-black uppercase text-xs tracking-widest text-slate-400 hover:text-slate-600">Cancel</button>
+                 <button 
+                    onClick={handleBulkImport}
+                    disabled={isBulkImporting || !bulkImportUrls.trim()}
+                    className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-500/30 disabled:opacity-50 flex items-center justify-center gap-2"
+                 >
+                   {isBulkImporting ? <Icon name="loader-2" className="animate-spin" /> : <Icon name="sparkles" />}
+                   {isBulkImporting ? 'Processing...' : 'Start Extraction'}
+                 </button>
+               </div>
+            </m.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
@@ -644,7 +694,24 @@ export function AdminProducts() {
                                 </div>
                               </div>
                               <div className="border-t border-slate-200 pt-6">
-                                <label className="block text-[10px] font-black text-orange-500 uppercase mb-2 ml-1">2. Affiliate Link</label>
+                                <div className="flex items-center justify-between mb-2">
+                                  <label className="block text-[10px] font-black text-indigo-500 uppercase ml-1">2. Or Use Scraper Extension</label>
+                                  <a href="/extension/SmartChoose-Extractor.zip" download className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full flex items-center gap-1 hover:bg-emerald-100 transition-all">
+                                    <Icon name="download" size={12} /> Download Extension
+                                  </a>
+                                </div>
+                                <button 
+                                  type="button" 
+                                  onClick={handleExtensionPaste}
+                                  className="w-full bg-white border-2 border-dashed border-indigo-200 p-4 rounded-xl text-indigo-600 font-bold text-xs flex items-center justify-center gap-2 hover:bg-indigo-50 hover:border-indigo-400 transition-all"
+                                >
+                                  <Icon name="clipboard" size={16} /> Paste Extension Data
+                                </button>
+                                <p className="text-[9px] text-slate-400 mt-2 text-center">Use our Chrome extension for 100% data fidelity on protected pages.</p>
+                              </div>
+
+                              <div className="border-t border-slate-200 pt-6">
+                                <label className="block text-[10px] font-black text-orange-500 uppercase mb-2 ml-1">3. Affiliate Link</label>
                                 <input type="url" value={formData.affiliateLinks[0]?.url || ''} 
                                       onChange={e=>{ 
                                         const updated=[...formData.affiliateLinks]; 

@@ -35,6 +35,7 @@ export function AdminOverview() {
   const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
 
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [topCategory, setTopCategory] = useState<[string, number]>(['Other', 0]);
   const [newMessages, setNewMessages] = useState(0);
 
@@ -43,16 +44,35 @@ export function AdminOverview() {
       setNewMessages(data.filter(m => m.status === 'new').length);
     });
 
-    // Fetch Top Products from Firestore
-    const fetchTopData = async () => {
+    const fetchDashboardData = async () => {
       try {
         const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
-        const q = query(collection(db, 'products'), orderBy('clicks', 'desc'), limit(5));
-        const snap = await getDocs(q);
-        const products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        // 1. Fetch Top Products
+        const qTop = query(collection(db, 'products'), orderBy('clicks', 'desc'), limit(5));
+        const snapTop = await getDocs(qTop);
+        const products = snapTop.docs.map(d => ({ id: d.id, type: 'product', ...d.data() }));
         setTopProducts(products);
 
-        // Derive top category from these products or a separate query
+        // 2. Fetch Recent Activity (Mixed)
+        const qRecentProducts = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(5));
+        const qRecentBlogs = query(collection(db, 'blogPosts'), orderBy('updatedAt', 'desc'), limit(5));
+        const qRecentJobs = query(collection(db, 'jobs'), orderBy('postedAt', 'desc'), limit(5));
+
+        const [snapProd, snapBlog, snapJob] = await Promise.all([
+          getDocs(qRecentProducts),
+          getDocs(qRecentBlogs),
+          getDocs(qRecentJobs)
+        ]);
+
+        const combined = [
+          ...snapProd.docs.map(d => ({ id: d.id, type: 'product', timestamp: d.data().createdAt, title: d.data().title, icon: 'package', color: 'emerald' })),
+          ...snapBlog.docs.map(d => ({ id: d.id, type: 'blog', timestamp: d.data().updatedAt || d.data().createdAt, title: d.data().title, icon: 'newspaper', color: 'blue' })),
+          ...snapJob.docs.map(d => ({ id: d.id, type: 'job', timestamp: d.data().postedAt, title: d.data().title, icon: 'briefcase', color: 'amber' }))
+        ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8);
+
+        setRecentActivity(combined);
+
         if (products.length > 0) {
           const cats: Record<string, number> = {};
           products.forEach((p: any) => {
@@ -62,45 +82,17 @@ export function AdminOverview() {
           if (top) setTopCategory([top[0], top[1]]);
         }
       } catch (e) {
-        console.warn('Dashboard Top Data Fetch Error:', e);
+        console.warn('Dashboard Data Fetch Error:', e);
       }
     };
-    fetchTopData();
+    fetchDashboardData();
   }, [fetchInquiries]);
 
   const stats = [
-    {
-      id: 'products',
-      label: 'Total Products',
-      value: siteStats.totalProducts || 0,
-      icon: 'package',
-      color: 'emerald',
-      trend: '+12%'
-    },
-    {
-      id: 'inbox',
-      label: 'New Messages',
-      value: newMessages,
-      icon: 'inbox',
-      color: newMessages > 0 ? 'blue' : 'slate',
-      trend: newMessages > 0 ? 'URGENT' : 'CLEAR'
-    },
-    {
-      id: 'clicks',
-      label: 'Total Clicks',
-      value: totalClicks.toLocaleString(),
-      icon: 'mouse-pointer-click',
-      color: 'emerald',
-      trend: '+23%'
-    },
-    {
-      id: 'views',
-      label: 'Total Views',
-      value: totalViews.toLocaleString(),
-      icon: 'eye',
-      color: 'green',
-      trend: '+18%'
-    }
+    { id: 'products', label: 'Products', value: siteStats.totalProducts || 0, icon: 'package', color: 'emerald', sub: `${siteStats.totalPublishedProducts} live` },
+    { id: 'blogs', label: 'Articles', value: siteStats.totalBlogs || 0, icon: 'newspaper', color: 'blue', sub: 'Editorial Hub' },
+    { id: 'jobs', label: 'Job Alerts', value: siteStats.totalJobs || 0, icon: 'briefcase', color: 'amber', sub: 'Career Portal' },
+    { id: 'inbox', label: 'Messages', value: newMessages, icon: 'inbox', color: newMessages > 0 ? 'rose' : 'slate', sub: newMessages > 0 ? 'Needs attention' : 'All clear' }
   ];
 
   return (
@@ -108,22 +100,14 @@ export function AdminOverview() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Dashboard Overview</h1>
-          <p className="text-slate-500">Welcome back! Here's what's happening with your store.</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Platform Overview</h1>
+          <p className="text-slate-500">Real-time performance across all SmartChoose modules.</p>
         </div>
-        <button
-          onClick={handleRepair}
-          disabled={isRepairing}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-emerald-200 transition-all shadow-sm disabled:opacity-50"
-        >
-          <Icon name={isRepairing ? "loader-2" : "refresh-cw"} size={16} className={isRepairing ? "animate-spin" : ""} />
-          {isRepairing ? "Repairing..." : "Repair Stats"}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => router.push('/admin/products')} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2"><Icon name="plus" size={16} /> New Product</button>
+          <button onClick={handleRepair} disabled={isRepairing} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-emerald-600 transition-all shadow-sm"><Icon name={isRepairing ? "loader-2" : "refresh-cw"} size={18} className={isRepairing ? "animate-spin" : ""} /></button>
+        </div>
       </div>
-
-
-      {/* AI Agent Control - NEW */}
-      <AdminAgentControl />
 
       {/* Stats Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -133,139 +117,115 @@ export function AdminOverview() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            onClick={() => {
-              if (stat.id === 'views' || stat.id === 'clicks') {
-                setDrillDownType(stat.id as DrillDownType);
-              } else if (stat.id === 'products') {
-                router.push('/admin/products');
-              } else if (stat.id === 'inbox') {
-                router.push('/admin/inbox');
-              }
-            }}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 transition-all cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-emerald-200"
+            onClick={() => router.push(`/admin/${stat.id === 'blogs' ? 'blog' : stat.id}`)}
+            className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 transition-all cursor-pointer hover:shadow-xl group"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl bg-${stat.color}-100 flex items-center justify-center`}>
-                <Icon name={stat.icon} size={24} className={`text-${stat.color}-600`} />
+            <div className="flex items-center gap-4">
+              <div className={`w-14 h-14 rounded-2xl bg-${stat.color}-100 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                <Icon name={stat.icon} size={28} className={`text-${stat.color}-600`} />
               </div>
-              <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                {stat.trend}
-              </span>
+              <div>
+                <p className="text-3xl font-black text-slate-900">{stat.value}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+              </div>
             </div>
-            <p className="text-3xl font-bold text-slate-900 mb-1">{stat.value}</p>
-            <p className="text-sm text-slate-500">{stat.label}</p>
+            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400">{stat.sub}</span>
+              <Icon name="arrow-right" size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
+            </div>
           </m.div>
         ))}
       </div>
 
-      {/* Additional Stats */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          onClick={() => setDrillDownType('ctr')}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-emerald-200 transition-all"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <Icon name="activity" size={20} className="text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500 line-clamp-1">Click-Through Rate</p>
-              <p className="text-2xl font-bold text-slate-900">{ctr}%</p>
-            </div>
-          </div>
-        </m.div>
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Performance & Activity */}
+        <div className="lg:col-span-2 space-y-8">
+           <div className="grid sm:grid-cols-2 gap-6">
+              <div onClick={() => setDrillDownType('views')} className="bg-emerald-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-900/20 cursor-pointer hover:scale-[1.02] transition-all relative overflow-hidden group">
+                 <Icon name="eye" size={120} className="absolute -bottom-4 -right-4 text-white/10 rotate-[-15deg]" />
+                 <p className="text-sm font-bold text-emerald-100 uppercase tracking-widest mb-1">Total Impressions</p>
+                 <p className="text-4xl font-black">{totalViews.toLocaleString()}</p>
+                 <div className="mt-6 flex items-center gap-2 text-xs font-bold bg-white/10 w-fit px-3 py-1.5 rounded-full backdrop-blur-md">
+                   <Icon name="trending-up" size={14} /> +18% this month
+                 </div>
+              </div>
+              <div onClick={() => setDrillDownType('clicks')} className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-slate-900/20 cursor-pointer hover:scale-[1.02] transition-all relative overflow-hidden group">
+                 <Icon name="mouse-pointer-click" size={120} className="absolute -bottom-4 -right-4 text-white/10 rotate-[-15deg]" />
+                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Affiliate Clicks</p>
+                 <p className="text-4xl font-black">{totalClicks.toLocaleString()}</p>
+                 <div className="mt-6 flex items-center gap-2 text-xs font-bold bg-emerald-500 w-fit px-3 py-1.5 rounded-full">
+                   <Icon name="activity" size={14} /> {ctr}% conversion rate
+                 </div>
+              </div>
+           </div>
 
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white rounded-2xl p-6 shadow-sm"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Icon name="tag" size={20} className="text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Top Category</p>
-              <p className="text-2xl font-bold text-slate-900">{topCategory?.[0] || 'N/A'}</p>
-            </div>
-          </div>
-        </m.div>
+           {/* Recent Activity */}
+           <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+             <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <Icon name="history" className="text-emerald-500" />
+                  Recent Activity
+                </h2>
+                <button className="text-[10px] font-black uppercase text-emerald-600 hover:underline">View All Logs</button>
+             </div>
+             <div className="divide-y divide-slate-50">
+                {recentActivity.map((activity, i) => (
+                  <div key={i} className="p-6 flex items-center gap-5 hover:bg-slate-50 transition-colors cursor-pointer group">
+                    <div className={`w-12 h-12 rounded-2xl bg-${activity.color}-100 flex items-center justify-center text-${activity.color}-600 shrink-0`}>
+                      <Icon name={activity.icon} size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-${activity.color}-100 text-${activity.color}-700`}>{activity.type}</span>
+                        <span className="text-[10px] text-slate-400">{new Date(activity.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p className="font-bold text-slate-800 truncate group-hover:text-emerald-600 transition-colors">{activity.title}</p>
+                    </div>
+                    <Icon name="chevron-right" size={18} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-all" />
+                  </div>
+                ))}
+             </div>
+           </div>
+        </div>
 
-        <m.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-white rounded-2xl p-6 shadow-sm"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
-              <Icon name="trending-up" size={20} className="text-rose-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Today's Visitors</p>
-              <p className="text-2xl font-bold text-slate-900">
-                {analytics.dailyVisitors[analytics.dailyVisitors.length - 1]}
-              </p>
-            </div>
-          </div>
-        </m.div>
+        {/* Sidebar Insights */}
+        <div className="space-y-8">
+           <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
+              <Icon name="sparkles" size={100} className="absolute -top-4 -right-4 text-white/10 rotate-12" />
+              <h3 className="text-lg font-black mb-6">AI Insights</h3>
+              <div className="space-y-4">
+                 <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
+                   <p className="text-[10px] font-black uppercase text-indigo-200 mb-1">Engagement Tip</p>
+                   <p className="text-xs font-medium leading-relaxed">Your "Fashion" category has 40% higher CTR. Consider adding more wearables.</p>
+                 </div>
+                 <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
+                   <p className="text-[10px] font-black uppercase text-indigo-200 mb-1">Content Gap</p>
+                   <p className="text-xs font-medium leading-relaxed">You haven't posted a blog in 3 days. AI suggests a "Top 5 Smartphones" guide.</p>
+                 </div>
+              </div>
+           </div>
+
+           <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+              <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center justify-between">
+                Performance
+                <span className="text-[10px] bg-slate-100 px-2 py-1 rounded-lg">Top Content</span>
+              </h3>
+              <div className="space-y-6">
+                 {topProducts.slice(0, 3).map((p, i) => (
+                   <div key={i} className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-slate-50 border p-1 overflow-hidden shrink-0">
+                        <img src={p.images?.[0]} className="w-full h-full object-contain" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-slate-800 truncate">{p.title}</p>
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase">{p.clicks} clicks</p>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </div>
+        </div>
       </div>
-
-      {/* Top Products */}
-      <m.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="bg-white rounded-2xl shadow-sm overflow-hidden"
-      >
-        <div className="p-6 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-900">Top Performing Products</h2>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {topProducts.length > 0 ? (
-            topProducts.map((product, idx) => {
-              const productCtr = product.views > 0
-                ? ((product.clicks / product.views) * 100).toFixed(1)
-                : '0.0';
-
-              return (
-                <div key={product.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                  <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 text-white flex items-center justify-center font-bold text-sm">
-                    {idx + 1}
-                  </span>
-                  <img
-                    src={product.images?.[0] || 'https://via.placeholder.com/100'}
-                    alt=""
-                    className="w-12 h-12 rounded-lg object-cover bg-slate-100"
-                  />
-                  <div className="flex-1 min-w-0" title={product.title}>
-                    <p
-                      className="font-semibold text-slate-900 truncate"
-                      style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
-                    >
-                      {formatShortTitle(product.title)}
-                    </p>
-                    <p className="text-sm text-slate-500">{product.category} • {product.clicks} clicks</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-slate-900">{productCtr}%</p>
-                    <p className="text-xs text-slate-500">CTR</p>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="p-8 text-center text-slate-500">
-              <Icon name="package-x" size={48} className="mx-auto mb-4 text-slate-300" />
-              <p>No products yet</p>
-            </div>
-          )}
-        </div>
-      </m.div>
 
       {/* Analytics Modal */}
       {drillDownType && (

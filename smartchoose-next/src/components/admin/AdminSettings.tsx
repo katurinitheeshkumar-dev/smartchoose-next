@@ -567,8 +567,64 @@ export function AdminSettings() {
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <Icon name="shield" size={20} className="text-amber-600" />
-            Security
+            <Icon name="sparkles" size={20} className="text-amber-500" />
+            Intelligence & APIs
+          </h2>
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                  Gemini AI API Key
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-[10px] text-emerald-600 underline">Get Key</a>
+                </label>
+                <input
+                  type="password"
+                  placeholder="Paste Gemini API Key..."
+                  value={formData.geminiApiKey || ''}
+                  onChange={(e) => setFormData({ ...formData, geminiApiKey: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none font-mono text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                  Google Search Console ID
+                  <span className="text-[10px] text-slate-400">For indexing</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="SC-123456789..."
+                  value={formData.searchConsoleId || ''}
+                  onChange={(e) => setFormData({ ...formData, searchConsoleId: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none font-mono text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                  Google Analytics ID (GA4)
+                  <span className="text-[10px] text-slate-400">For traffic tracking</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="G-XXXXXXXXXX"
+                  value={formData.googleAnalyticsId || ''}
+                  onChange={(e) => setFormData({ ...formData, googleAnalyticsId: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none font-mono text-sm"
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+               <p className="text-xs text-amber-700 leading-relaxed font-medium">
+                 <Icon name="shield-alert" size={14} className="inline mr-1 -mt-1" />
+                 These keys power the AI Bulk Import, Blog Generation, and Automatic SEO Indexing. Keep them confidential.
+               </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <Icon name="shield" size={20} className="text-emerald-600" />
+            Security & Administration
           </h2>
 
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">

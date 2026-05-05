@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "SmartChoose Extractor Pro",
+  "version": "1.1",
+  "description": "100% High-Fidelity Data Extraction for SmartChoose Admin.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "icons": {
+    "128": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.amazon.in/*", "*://*.flipkart.com/*", "*://*.amazon.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

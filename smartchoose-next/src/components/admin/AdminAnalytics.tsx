@@ -78,75 +78,44 @@ export function AdminAnalytics() {
   const totalViews = siteStats.totalViews || 0;
   const avgCtr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(2) : '0.00';
 
+  const stats = [
+    { id: 'views', label: 'Platform Views', value: totalViews, icon: 'eye', color: 'emerald', sub: 'Site-wide' },
+    { id: 'clicks', label: 'Total Conversions', value: totalClicks, icon: 'mouse-pointer-click', color: 'blue', sub: 'Affiliate Clicks' },
+    { id: 'blogs', label: 'Article Engagement', value: siteStats.totalBlogs || 0, icon: 'newspaper', color: 'amber', sub: `${avgCtr}% Avg CTR` },
+    { id: 'jobs', label: 'Job Responses', value: siteStats.totalJobs || 0, icon: 'briefcase', color: 'indigo', sub: 'High Intent' }
+  ];
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Analytics</h1>
-        <p className="text-slate-500">Track your website performance and user engagement</p>
+        <h1 className="text-3xl font-black text-slate-900 mb-2">Performance Intelligence</h1>
+        <p className="text-slate-500 font-medium">Deep-dive into conversion metrics across all SmartChoose modules.</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div
-          onClick={() => setDrillDownType('views')}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-emerald-200 transition-all"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <Icon name="eye" size={20} className="text-emerald-600" />
+        {stats.map((stat, idx) => (
+          <div
+            key={idx}
+            onClick={() => stat.id === 'views' || stat.id === 'clicks' ? setDrillDownType(stat.id as any) : null}
+            className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 transition-all cursor-pointer hover:shadow-xl hover:-translate-y-1 group"
+          >
+            <div className="flex items-center gap-4">
+              <div className={`w-14 h-14 rounded-2xl bg-${stat.color}-100 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                <Icon name={stat.icon} size={28} className={`text-${stat.color}-600`} />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-slate-900">{stat.value.toLocaleString()}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-slate-500">Total Views</p>
-              <p className="text-2xl font-bold text-slate-900">{totalViews.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          onClick={() => setDrillDownType('clicks')}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-emerald-200 transition-all"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-              <Icon name="mouse-pointer-click" size={20} className="text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Total Clicks</p>
-              <p className="text-2xl font-bold text-slate-900">{totalClicks.toLocaleString()}</p>
+            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500">{stat.sub}</span>
+              <Icon name="trending-up" size={14} className="text-emerald-500" />
             </div>
           </div>
-        </div>
-
-        <div
-          onClick={() => setDrillDownType('ctr')}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-emerald-200 transition-all"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <Icon name="activity" size={20} className="text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Avg CTR</p>
-              <p className="text-2xl font-bold text-slate-900">{avgCtr}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          onClick={() => setDrillDownType('conversion')}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-emerald-200 transition-all"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Icon name="trending-up" size={20} className="text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Conversion</p>
-              <p className="text-2xl font-bold text-slate-900">{(parseFloat(avgCtr) * 0.8).toFixed(2)}%</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Charts */}

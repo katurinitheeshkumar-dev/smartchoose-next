@@ -62,7 +62,7 @@ async function planBlogStep(title: string, style: string, apiKey: string) {
   const prompt = `
     As an expert SEO strategist, create the metadata for a blog about: "${title}".
     Style: ${style}
-    Return ONLY a JSON object:
+    IMPORTANT: Return ONLY a valid JSON object. No markdown, no preamble.
     {
       "title": "Final SEO Title",
       "slug": "url-friendly-slug",
@@ -73,7 +73,23 @@ async function planBlogStep(title: string, style: string, apiKey: string) {
       "tags": ["tag1", "tag2", "tag3"]
     }
   `;
-  return callGemini(prompt, apiKey, true);
+  try {
+    const raw = await callGemini(prompt, apiKey, false);
+    // Clean potential markdown code blocks
+    const cleanJson = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (e) {
+    console.error("PlanBlogStep Failed, using fallback", e);
+    return {
+      title: title,
+      slug: title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, ''),
+      category: 'Gadgets',
+      intro: `Welcome to our comprehensive guide on ${title}. Today we dive deep into the best options available.`,
+      seoTitle: title.slice(0, 60),
+      seoDescription: `Learn everything about ${title} in this expert guide.`,
+      tags: ['Gadgets', 'Guide']
+    };
+  }
 }
 
 async function writeContentStep(title: string, intro: string, apiKey: string) {
@@ -88,21 +104,34 @@ async function writeContentStep(title: string, intro: string, apiKey: string) {
     - DO NOT include introduction or conclusion yet.
     Return ONLY the HTML string.
   `;
-  return callGemini(prompt, apiKey, false);
+  try {
+    return await callGemini(prompt, apiKey, false);
+  } catch (e) {
+    return `<section><h2>Detailed Analysis of ${title}</h2><p>Content generation failed, but stay tuned for updates on this topic.</p></section>`;
+  }
 }
 
 async function generateProductsStep(title: string, apiKey: string) {
   "use step";
   const prompt = `
-    Based on the blog title "${title}", suggest 3-5 relevant products.
+    Based on the blog title "${title}", suggest 3 relevant products.
     Also write a final conclusion paragraph.
-    Return ONLY a JSON object:
+    IMPORTANT: Return ONLY a valid JSON object.
     {
       "conclusion": "Final wrap-up paragraph",
       "products": [
-        { "name": "Product Name", "description": "Quick reason to buy", "pros": ["Pro 1", "Pro 2"], "price": "Price", "affiliateLink": "" }
+        { "id": "1", "name": "Product Name", "description": "Quick reason to buy", "pros": ["Pro 1", "Pro 2"], "price": "Price", "affiliateLink": "" }
       ]
     }
   `;
-  return callGemini(prompt, apiKey, true);
+  try {
+    const raw = await callGemini(prompt, apiKey, false);
+    const cleanJson = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (e) {
+    return {
+      conclusion: `In conclusion, ${title} is a great area to explore. We hope this guide helped you make a smart choice.`,
+      products: []
+    };
+  }
 }

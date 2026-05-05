@@ -292,10 +292,10 @@ export function ProductsSection({
             ref={observerTarget} 
             className="h-32 flex items-center justify-center mt-8"
           >
-            {(isBatchLoading || true) && (
+            {isBatchLoading && (
                <div className="flex flex-col items-center gap-3 text-slate-400">
                   <Icon name="loader-2" size={28} className="animate-spin text-emerald-500" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 animate-pulse">Loading amazing deals...</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Syncing Feed...</span>
                </div>
             )}
           </div>

@@ -352,65 +352,88 @@ export function AdminBlogPosts() {
   if (view === 'editor') return <BlogEditor initialPost={editingPost} onSave={handleSave} onCancel={()=>{setView('list'); setEditingPost(null);}} isSaving={isSaving} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-6 max-w-[1400px] mx-auto min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Icon name="newspaper" size={26} className="text-emerald-500" /> Blog Posts</h1>
-          <p className="text-slate-500 text-sm mt-0.5">High-performance editorial management ({siteStats.totalBlogs} total)</p>
+          <h1 className="text-3xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
+            <Icon name="newspaper" size={32} className="text-emerald-500" />
+            Editorial Hub
+          </h1>
+          <p className="text-slate-500 mt-1 font-bold text-xs uppercase tracking-widest opacity-60">High-Performance Content Engine ({siteStats.totalBlogs} articles)</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowAIGenerator(true)} className="px-5 py-2.5 bg-amber-500 text-white font-bold rounded-xl shadow-lg flex items-center gap-2">
-            <Icon name="sparkles" size={18} />
-            AI Generate
+        <div className="flex flex-wrap gap-3">
+          <button onClick={() => setShowAIGenerator(true)} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20">
+            <Icon name="sparkles" size={16} className="text-amber-400" /> AI Generate
           </button>
-          <button onClick={()=>{setEditingPost(null); setView('editor');}} className="px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl shadow-lg">+ New Post</button>
+          <button onClick={() => {setEditingPost(null); setView('editor');}} className="bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-xl shadow-emerald-500/30">
+            <Icon name="plus" size={18} /> New Post
+          </button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input className="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm" placeholder="Search posts..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <Icon name="search" size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search articles..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
+          />
         </div>
-        <div className="flex gap-2">
-          {['all', 'published', 'draft'].map((s: string) => (
-            <button key={s} onClick={()=>setFilterStatus(s as any)} className={`px-4 py-2.5 rounded-xl text-sm font-semibold capitalize ${filterStatus === s ? 'bg-emerald-500 text-white' : 'bg-white border'}`}>{s}</button>
+        <div className="flex items-center gap-1 bg-white border border-slate-200 p-1.5 rounded-xl shrink-0">
+          {['all', 'published', 'draft'].map((s) => (
+            <button 
+              key={s} 
+              onClick={() => setFilterStatus(s as any)} 
+              className={`px-4 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${filterStatus === s ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {s}
+            </button>
           ))}
         </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
         {isLoading ? (
-          <div className="py-20 text-center"><Icon name="loader-2" size={40} className="animate-spin text-emerald-500 mx-auto" /></div>
+          <div className="py-24 text-center">
+            <Icon name="loader-2" size={48} className="animate-spin text-emerald-500 mx-auto mb-4 opacity-20" />
+            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Loading Editorial Content...</p>
+          </div>
         ) : localBlogs.length === 0 ? (
-          <div className="py-20 text-center text-slate-400 font-bold uppercase text-xs">No posts found</div>
+          <div className="py-24 text-center">
+            <Icon name="newspaper" size={48} className="text-slate-200 mx-auto mb-4" />
+            <p className="text-sm font-bold text-slate-400">No articles found in this category.</p>
+          </div>
         ) : (
           <div className="divide-y divide-slate-50">
             {localBlogs.map((post: any) => (
-              <div key={post.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 cursor-pointer group" onClick={()=>{setEditingPost(post); setView('editor');}}>
-                <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+              <div key={post.id} className="p-6 flex items-center gap-6 hover:bg-slate-50/50 cursor-pointer group transition-colors" onClick={() => {setEditingPost(post); setView('editor');}}>
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 shadow-sm ring-4 ring-white transition-all group-hover:scale-105">
                   <img src={post.featuredImage || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${post.status==='published'?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-400'}`}>{post.status}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">/blog/{post.slug}</span>
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ring-1 ${post.status === 'published' ? 'bg-emerald-50 text-emerald-600 ring-emerald-100' : 'bg-slate-100 text-slate-500 ring-slate-200'}`}>{post.status}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{post.category}</span>
                   </div>
-                  <h3 className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{post.title}</h3>
+                  <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-600 transition-colors tracking-tight line-clamp-1">{post.title}</h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5 font-mono opacity-60">/blog/{post.slug}</p>
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <button onClick={(e)=>{e.stopPropagation(); window.open(`/blog/${post.slug}`, '_blank');}} className="p-2 text-slate-400 hover:text-emerald-500"><Icon name="external-link" size={18} /></button>
-                   <button onClick={(e)=>{e.stopPropagation(); if(confirm('Delete?')) deleteBlog(post.id).then(()=>loadBlogs(currentPage));}} className="p-2 text-slate-400 hover:text-red-500"><Icon name="trash-2" size={18} /></button>
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                   <button onClick={(e) => { e.stopPropagation(); window.open(`/blog/${post.slug}`, '_blank'); }} className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Icon name="external-link" size={20} /></button>
+                   <button onClick={(e) => { e.stopPropagation(); if (confirm('Delete this article forever?')) deleteBlog(post.id).then(() => loadBlogs(currentPage)); }} className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Icon name="trash-2" size={20} /></button>
                 </div>
               </div>
             ))}
           </div>
         )}
-        <div className="p-4 bg-slate-50 border-t flex justify-between items-center">
-           <span className="text-[10px] font-black text-slate-400 uppercase">Page {currentPage} &bull; {totalCount} total</span>
+        <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center">
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Page {currentPage} &bull; {totalCount} total articles</span>
            <div className="flex gap-2">
-             <button disabled={currentPage===1 || isLoading} onClick={handlePrevPage} className="px-4 py-2 bg-white border rounded-xl text-[10px] font-black uppercase disabled:opacity-30">Prev</button>
-             <button disabled={localBlogs.length < PAGE_SIZE || isLoading} onClick={handleNextPage} className="px-4 py-2 bg-white border rounded-xl text-[10px] font-black uppercase disabled:opacity-30">Next</button>
+             <button disabled={currentPage === 1 || isLoading} onClick={handlePrevPage} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 disabled:opacity-30 transition-all">Prev</button>
+             <button disabled={localBlogs.length < PAGE_SIZE || isLoading} onClick={handleNextPage} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 disabled:opacity-30 transition-all">Next</button>
            </div>
         </div>
       </div>

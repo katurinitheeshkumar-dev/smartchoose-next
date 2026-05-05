@@ -33,10 +33,11 @@ interface ProductCardProps {
   onClick?: () => void;
 }
 
-export function ProductCard({ product, highlighted = false, onCopy, onClick }: ProductCardProps) {
+import Link from 'next/link';
+
+export function ProductCard({ product, highlighted = false, onCopy }: ProductCardProps) {
   const { recordClick, getProductUrl } = useDatabase();
   const { isAdmin } = useAdmin();
-  const router = useRouter();
   const cardRef = useRef<HTMLDivElement>(null);
   const mainImage = product.images?.[0] || 'https://via.placeholder.com/600?text=No+Image';
 
@@ -67,21 +68,6 @@ export function ProductCard({ product, highlighted = false, onCopy, onClick }: P
     onCopy?.();
   };
 
-  const prefetched = useRef(false);
-
-  const handleMouseEnter = () => {
-    if (!prefetched.current && product.id) {
-      const url = `/product/${product.id}`;
-      // Next.js router.prefetch is very efficient
-      router.prefetch(url);
-      prefetched.current = true;
-    }
-  };
-
-  const handleCardClick = () => {
-    onClick?.();
-  };
-
   // Pre-calculate Affiliate Links to avoid doing it during render phase over and over
   const processedLinks = useMemo(() => {
     const list = (product.affiliateLinks && product.affiliateLinks.length > 0
@@ -105,13 +91,13 @@ export function ProductCard({ product, highlighted = false, onCopy, onClick }: P
   }, [product.affiliateLinks, product.affiliateLink, product.price, platform.name]);
 
   return (
-    <div
-      ref={cardRef}
+    <Link
+      href={`/product/${product.id}`}
+      prefetch={true}
       className={`group relative bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover-lift cursor-pointer transition-all duration-500 gpu-accelerate ${highlighted ? 'product-highlight ring-2 ring-emerald-500 border-emerald-500' : ''
         }`}
-      onClick={handleCardClick}
-      onMouseEnter={handleMouseEnter}
     >
+      <div ref={cardRef}>
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-white border-b border-slate-100">
         <ProductImage
@@ -244,6 +230,7 @@ export function ProductCard({ product, highlighted = false, onCopy, onClick }: P
         </div>
       </div>
     </div>
+  </Link>
   );
 }
 

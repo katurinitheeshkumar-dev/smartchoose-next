@@ -85,6 +85,8 @@ export interface Settings {
   productWhatsappWebhookUrl?: string;
   productInstagramWebhookUrl?: string;
   geminiApiKey?: string;
+  searchConsoleId?: string;
+  googleAnalyticsId?: string;
 }
 
 // Analytics Types
