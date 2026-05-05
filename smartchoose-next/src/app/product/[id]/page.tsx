@@ -34,31 +34,42 @@ export async function generateMetadata(
   if (image && typeof image === 'string') {
     if (image.startsWith('//')) image = 'https:' + image;
     if (image.startsWith('http://')) image = image.replace('http://', 'https://');
+    // For Amazon images, SL1500 can be huge, but it's usually fine. 
+    // Just ensuring it's a valid string.
   } else {
     image = `${baseUrl}/logo.png`;
   }
 
   return {
+    metadataBase: new URL(baseUrl),
     title,
     description,
     openGraph: {
       title,
       description,
-      images: [{
-        url: image,
-        width: 1200,
-        height: 630,
-        alt: title
-      }],
+      siteName: 'SmartChoose',
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: 'en_IN',
       type: 'website',
-      url: `${baseUrl}/product/${id}`,
+      url: `/product/${id}`,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
       images: [image],
-    }
+      site: '@smartchoose',
+    },
+    alternates: {
+      canonical: `/product/${id}`,
+    },
   };
 }
 
