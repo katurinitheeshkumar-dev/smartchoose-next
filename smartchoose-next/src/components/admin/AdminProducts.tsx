@@ -79,10 +79,38 @@ export function AdminProducts() {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get('q') || '');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  
+  // Sync searchTerm to URL with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchTerm) params.set('q', searchTerm); else params.delete('q');
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Handle browser back button to close modal
+  useEffect(() => {
+    if (showModal) {
+      window.history.pushState({ modalOpen: true }, '');
+    }
+    
+    const handlePopState = (e: PopStateEvent) => {
+      if (showModal) {
+        setShowModal(false);
+        setEditingProduct(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showModal]);
   const [sourceUrl, setSourceUrl] = useState('');   
   const [isFetching, setIsFetching] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState<string | null>(null);
@@ -125,12 +153,6 @@ export function AdminProducts() {
 
 
   const categories = ['Electronics', 'Smartphones', 'Audio', 'Wearables', 'Laptops', 'Tablets', 'Cameras', 'TVs & Displays', 'Gaming & Accessories', 'Accessories', 'Kitchen', 'Home Appliances', 'Other'];
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   // Fetch Logic
   const loadProducts = useCallback(async (page: number, isNext: boolean = true) => {
@@ -437,8 +459,16 @@ export function AdminProducts() {
           />
         </div>
         <div className="flex items-center gap-1 bg-white border border-slate-200 p-1.5 rounded-xl shrink-0">
-          <button onClick={() => router.push('?filter=all')} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${filterStatus !== 'published' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>All</button>
-          <button onClick={() => router.push('?filter=published')} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${filterStatus === 'published' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>Published</button>
+          <button onClick={() => {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('filter', 'all');
+            router.replace(`?${params.toString()}`, { scroll: false });
+          }} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${filterStatus !== 'published' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>All</button>
+          <button onClick={() => {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set('filter', 'published');
+            router.replace(`?${params.toString()}`, { scroll: false });
+          }} className={`px-4 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${filterStatus === 'published' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>Published</button>
         </div>
       </div>
 

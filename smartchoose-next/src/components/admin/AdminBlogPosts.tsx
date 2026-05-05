@@ -267,16 +267,50 @@ function BlogEditor({ initialPost, onSave, onCancel, isSaving }: any) {
   );
 }
 
+import { useSearchParams, useRouter } from 'next/navigation';
+
 export function AdminBlogPosts() {
   const { fetchAdminBlogs, addBlog, updateBlog, deleteBlog, broadcastBlog, siteStats } = useDatabase();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [view, setView] = useState<'list' | 'editor'>('list');
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get('q') || '');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>((searchParams.get('filter') as any) || 'all');
   const [toast, setToast] = useState('');
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+
+  // Sync state to URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchTerm) params.set('q', searchTerm); else params.delete('q');
+      if (filterStatus !== 'all') params.set('filter', filterStatus); else params.delete('filter');
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, filterStatus]);
+
+  // Handle back button for editor view
+  useEffect(() => {
+    if (view === 'editor') {
+      window.history.pushState({ view: 'editor' }, '');
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (view === 'editor') {
+        setView('list');
+        setEditingPost(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [view]);
 
   const [localBlogs, setLocalBlogs] = useState<BlogPost[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -284,11 +318,6 @@ export function AdminBlogPosts() {
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const PAGE_SIZE = 10;
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   const loadBlogs = useCallback(async (page: number, isNext: boolean = true) => {
     setIsLoading(true);

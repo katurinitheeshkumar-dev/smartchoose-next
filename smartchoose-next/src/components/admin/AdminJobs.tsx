@@ -25,8 +25,13 @@ const CATEGORIES = [
 
 const PROXY_URL = 'https://smartchoose-proxy.vercel.app';
 
+import { useSearchParams, useRouter } from 'next/navigation';
+
 export function AdminJobs() {
   const { fetchAdminJobs, addJob, updateJob, deleteJob, broadcastJob, siteStats } = useDatabase();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [showEditor, setShowEditor] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [formData, setFormData] = useState<JobFormData>(initialForm);
@@ -34,21 +39,44 @@ export function AdminJobs() {
   const [isBroadcasting, setIsBroadcasting] = useState<string | null>(null);
   const [isHunting, setIsHunting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get('q') || '');
   const [huntTerm, setHuntTerm] = useState('');
-  
+
+  // Sync state to URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      const params = new URLSearchParams(searchParams.toString());
+      if (searchTerm) params.set('q', searchTerm); else params.delete('q');
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Handle back button for editor
+  useEffect(() => {
+    if (showEditor) {
+      window.history.pushState({ modalOpen: true }, '');
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (showEditor) {
+        setShowEditor(false);
+        setEditingJob(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showEditor]);
+
   const [localJobs, setLocalJobs] = useState<Job[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageHistory, setPageHistory] = useState<any[]>([null]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const PAGE_SIZE = 10;
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   const loadJobs = useCallback(async (page: number, isNext: boolean = true) => {
     setIsLoading(true);
