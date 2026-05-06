@@ -141,21 +141,22 @@ export function AdminProducts() {
         ...initialFormData,
         title: item.title || 'Product',
         fullTitle: item.title || '',
-        description: item.description || '',
-        price: item.price || '',
-        originalPrice: item.originalPrice || '',
+        description: item.features?.join('\n\n') || item.description || '',
+        price: item.price?.replace(/[₹,]/g, '') || '000',
+        originalPrice: item.originalPrice?.replace(/[₹,]/g, '') || '',
         discount: item.discount || '',
         brand: item.brand || '',
-        images: item.images?.length > 0 ? item.images : [],
+        images: item.images?.length > 0 ? item.images : [item.image].filter(Boolean),
         features: item.features || [],
         specifications: item.specifications || {},
+        category: item.category || 'Electronics',
         platform: platform.name,
         affiliateLink: cleanAffiliateLink(item.url || ''),
         affiliateLinks: [{ 
           url: cleanAffiliateLink(item.url || ''), 
           platform: platform.name, 
           icon: platform.iconFile || 'generic.svg', 
-          price: item.price 
+          price: item.price?.replace(/[₹,]/g, '') || '000'
         }],
         published: true
       };
