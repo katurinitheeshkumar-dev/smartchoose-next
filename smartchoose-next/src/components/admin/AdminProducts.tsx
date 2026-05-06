@@ -311,10 +311,68 @@ export function AdminProducts() {
     }
   };
 
+  const handleExtensionBulkPaste = async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      const rawData = JSON.parse(clipboardText);
+      
+      const dataArray = Array.isArray(rawData) ? rawData : [rawData];
+      
+      if (dataArray.length === 0) {
+        setToast({ show: true, message: 'No valid products found in clipboard.', type: 'error' });
+        return;
+      }
+
+      setToast({ show: true, message: `Directly uploading ${dataArray.length} products to database...`, type: 'info' });
+      
+      let successCount = 0;
+      for (const item of dataArray) {
+        if (!item.title && !item.price) continue;
+        
+        const platform = detectEcommercePlatform(item.url || '');
+        const finalData = {
+          ...initialFormData,
+          title: item.title || 'Product',
+          fullTitle: item.title || '',
+          description: item.description || '',
+          price: item.price || '',
+          originalPrice: item.originalPrice || '',
+          discount: item.discount || '',
+          brand: item.brand || '',
+          images: item.images?.length > 0 ? item.images : [],
+          features: item.features || [],
+          specifications: item.specifications || {},
+          platform: platform.name,
+          affiliateLink: cleanAffiliateLink(item.url || ''),
+          affiliateLinks: [{ 
+            url: cleanAffiliateLink(item.url || ''), 
+            platform: platform.name, 
+            icon: platform.iconFile || 'generic.svg', 
+            price: item.price 
+          }],
+          published: true
+        };
+        
+        await addProduct(finalData as any);
+        successCount++;
+      }
+
+      setToast({ show: true, message: `Successfully imported ${successCount} products from extension!`, type: 'success' });
+      loadProducts(1);
+    } catch (err) {
+      setToast({ show: true, message: 'Invalid extension data. Copy from extension first.', type: 'error' });
+    }
+  };
+
   const handleExtensionPaste = async () => {
     try {
       const clipboardText = await navigator.clipboard.readText();
-      const data = JSON.parse(clipboardText);
+      let data = JSON.parse(clipboardText);
+      
+      // If it's an array, take the first one for the modal
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
       
       if (!data.title && !data.price) {
         throw new Error("Invalid extension data format.");
@@ -454,9 +512,12 @@ export function AdminProducts() {
           <p className="text-slate-500 mt-1 font-bold text-xs uppercase tracking-widest opacity-60">High-Performance Affiliate Hub ({siteStats.totalProducts} items)</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => setShowBulkImport(true)} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20">
-            <Icon name="zap" size={16} className="text-emerald-400" /> AI Bulk Import
+          <button onClick={handleExtensionBulkPaste} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20">
+            <Icon name="clipboard" size={16} className="text-emerald-400" /> Paste Extension Data
           </button>
+          <a href="/extension/SmartChoose-Extractor.zip" download className="bg-white border-2 border-slate-200 text-slate-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+            <Icon name="download" size={16} className="text-emerald-500" /> Download Extension
+          </a>
           <button onClick={() => setShowModal(true)} className="bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-xl shadow-emerald-500/30">
             <Icon name="plus" size={18} /> New Product
           </button>

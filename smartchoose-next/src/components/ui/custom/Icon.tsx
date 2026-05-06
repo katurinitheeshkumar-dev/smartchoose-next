@@ -11,7 +11,7 @@ import {
   ExternalLink, Eye, ChevronDown, Plus, PlusCircle,
   Menu, Maximize2, Loader2, Save, SearchX, RefreshCw, Cpu, Heart, Lock,
   ChevronLeft, Bell, LayoutGrid, FileText, Home, Camera,
-  Smartphone, Laptop, Sparkles, Gift
+  Smartphone, Laptop, Sparkles, Gift, Clipboard
 } from 'lucide-react';
 
 interface IconProps {
@@ -100,7 +100,8 @@ const iconNameMap: Record<string, React.ComponentType<{ size?: number; className
   'smartphone': Smartphone,
   'laptop': Laptop,
   'sparkles': Sparkles,
-  'gift': Gift
+  'gift': Gift,
+  'clipboard': Clipboard
 };
 
 export function Icon({ name, size = 24, className = '', fill = 'none' }: IconProps) {
