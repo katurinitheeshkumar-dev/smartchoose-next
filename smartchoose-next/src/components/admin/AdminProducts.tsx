@@ -136,11 +136,17 @@ export function AdminProducts() {
     
     let successCount = 0;
     for (const item of collectedItems) {
+      // VALIDATION: Skip if no images or title
+      if (!item.title || (!item.images?.length && !item.image)) {
+        console.warn("Skipping product due to missing data:", item.title);
+        continue;
+      }
+
       const platform = detectEcommercePlatform(item.url || '');
       const finalData = {
         ...initialFormData,
-        title: item.title || 'Product',
-        fullTitle: item.title || '',
+        title: item.title,
+        fullTitle: item.title,
         description: item.features?.join('\n\n') || item.description || '',
         price: item.price?.replace(/[₹,]/g, '') || '000',
         originalPrice: item.originalPrice?.replace(/[₹,]/g, '') || '',
@@ -163,6 +169,14 @@ export function AdminProducts() {
       
       await addProduct(finalData as any);
       successCount++;
+    }
+
+    // Trigger Algolia Sync so products appear on website instantly
+    try {
+      setToast({ show: true, message: 'Syncing search engine...', type: 'info' });
+      await fetch('/api/sync-algolia', { method: 'POST' });
+    } catch (e) {
+      console.error("Algolia sync failed", e);
     }
 
     // Tell extension to clear storage

@@ -129,14 +129,21 @@ function showToast(msg) {
     setTimeout(() => toast.remove(), 5000);
 }
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function fetchDeepData(url) {
     try {
+        await sleep(Math.random() * 1000 + 500); // Human-like delay
         const res = await fetch(url);
+        if (!res.ok) throw new Error("Fetch failed");
         const html = await res.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         return scrapeSingleProduct(doc, url);
-    } catch (e) { return null; }
+    } catch (e) { 
+        console.error("Deep fetch failed", e);
+        return null; 
+    }
 }
 
 function injectButtons() {
@@ -216,6 +223,7 @@ function injectButtons() {
 }
 
 async function collectProduct(data, btn = null) {
+    if (!chrome.runtime?.id) return; 
     try {
         const { sc_collected = [] } = await chrome.storage.local.get('sc_collected');
         if (sc_collected.find(p => p.url === data.url)) {
@@ -229,11 +237,14 @@ async function collectProduct(data, btn = null) {
 }
 
 async function syncWithAdmin() {
+    if (!chrome.runtime?.id) return;
     if (window.location.href.includes('smartchoose.in/admin')) {
-        const { sc_collected = [] } = await chrome.storage.local.get('sc_collected');
-        if (sc_collected.length > 0) {
-            window.postMessage({ type: 'SC_SYNC_DATA', data: sc_collected }, '*');
-        }
+        try {
+            const { sc_collected = [] } = await chrome.storage.local.get('sc_collected');
+            if (sc_collected.length > 0) {
+                window.postMessage({ type: 'SC_SYNC_DATA', data: sc_collected }, '*');
+            }
+        } catch (e) {}
     }
 }
 
@@ -244,8 +255,9 @@ if (window.location.href.includes('amazon') || window.location.href.includes('fl
 if (window.location.href.includes('smartchoose.in')) {
     setInterval(syncWithAdmin, 4000);
     window.addEventListener('message', async (event) => {
+        if (!chrome.runtime?.id) return;
         if (event.data?.type === 'SC_CLEAR_COLLECTED') {
-            await chrome.storage.local.set({ sc_collected: [] });
+            try { await chrome.storage.local.set({ sc_collected: [] }); } catch(e) {}
         }
     });
 }
