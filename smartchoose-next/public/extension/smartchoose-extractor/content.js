@@ -272,7 +272,7 @@ if (window.location.href.includes('amazon') || window.location.href.includes('fl
 }
 
 if (window.location.href.includes('smartchoose.in')) {
-    setInterval(syncWithAdmin, 4000);
+    setInterval(syncWithAdmin, 2000);
     window.addEventListener('message', async (event) => {
         if (!chrome.runtime?.id) return;
         if (event.data?.type === 'SC_CLEAR_COLLECTED') {

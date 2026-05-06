@@ -18,7 +18,7 @@
   ],
   "content_scripts": [
     {
-      "matches": ["*://*.amazon.in/*", "*://*.flipkart.com/*", "*://*.amazon.com/*", "https://www.smartchoose.in/admin/*"],
+      "matches": ["*://*.amazon.in/*", "*://*.flipkart.com/*", "*://*.amazon.com/*", "*://smartchoose.in/admin/*", "*://www.smartchoose.in/admin/*"],
       "js": ["content.js"],
       "css": ["styles.css"]
     }
