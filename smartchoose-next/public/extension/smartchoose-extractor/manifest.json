@@ -11,6 +11,11 @@
   "icons": {
     "128": "icon.png"
   },
+  "host_permissions": [
+    "*://*.amazon.in/*",
+    "*://*.amazon.com/*",
+    "*://*.flipkart.com/*"
+  ],
   "content_scripts": [
     {
       "matches": ["*://*.amazon.in/*", "*://*.flipkart.com/*", "*://*.amazon.com/*", "https://www.smartchoose.in/admin/*"],

@@ -58,35 +58,34 @@ function scrapeProducts() {
   return scrapeSingleProduct();
 }
 
-function scrapeSingleProduct() {
-  const url = window.location.href;
+function scrapeSingleProduct(doc = document, url = window.location.href) {
   const isAmazon = url.includes('amazon');
   const isFlipkart = url.includes('flipkart');
 
   const data = {
     title: '', price: '', originalPrice: '', discount: '',
     images: [], features: [], specifications: {},
-    brand: '', rating: '4.5', reviews: '0', url: window.location.href
+    brand: '', rating: '4.5', reviews: '0', url: url
   };
 
   if (isAmazon) {
-    data.title = document.querySelector('#productTitle')?.innerText.trim();
-    data.price = document.querySelector('.a-price-whole')?.innerText.trim();
-    data.originalPrice = document.querySelector('.a-text-strike')?.innerText.trim();
-    data.discount = document.querySelector('.savingsPercentage')?.innerText.trim();
-    data.brand = document.querySelector('#bylineInfo')?.innerText.trim().replace('Brand: ', '');
+    data.title = doc.querySelector('#productTitle')?.innerText.trim();
+    data.price = doc.querySelector('.a-price-whole')?.innerText.trim();
+    data.originalPrice = doc.querySelector('.a-text-strike')?.innerText.trim();
+    data.discount = doc.querySelector('.savingsPercentage')?.innerText.trim();
+    data.brand = doc.querySelector('#bylineInfo')?.innerText.trim().replace('Brand: ', '');
     
-    document.querySelectorAll('#altImages img').forEach(img => {
+    doc.querySelectorAll('#altImages img').forEach(img => {
       const src = img.src.replace(/\._AC_.*_\./, '.');
       if (src && !src.includes('video') && !data.images.includes(src)) data.images.push(src);
     });
 
-    document.querySelectorAll('#feature-bullets li span').forEach(li => {
+    doc.querySelectorAll('#feature-bullets li span').forEach(li => {
       const txt = li.innerText.trim();
       if (txt) data.features.push(txt);
     });
 
-    document.querySelectorAll('#productDetails_techSpec_section_1 tr').forEach(tr => {
+    doc.querySelectorAll('#productDetails_techSpec_section_1 tr').forEach(tr => {
       const key = tr.querySelector('th')?.innerText.trim();
       const val = tr.querySelector('td')?.innerText.trim();
       if (key && val) data.specifications[key] = val;
@@ -94,22 +93,31 @@ function scrapeSingleProduct() {
   }
 
   if (isFlipkart) {
-    data.title = document.querySelector('.B_NuCI')?.innerText.trim();
-    data.price = document.querySelector('._30jeq3._16Jk6d')?.innerText.trim();
-    data.originalPrice = document.querySelector('._3I9_wc._27W-Wc')?.innerText.trim();
-    data.discount = document.querySelector('._3Ay6Sb._31DcoD')?.innerText.trim();
+    data.title = doc.querySelector('.B_NuCI')?.innerText.trim();
+    data.price = doc.querySelector('._30jeq3._16Jk6d')?.innerText.trim();
+    data.originalPrice = doc.querySelector('._3I9_wc._27W-Wc')?.innerText.trim();
+    data.discount = doc.querySelector('._3Ay6Sb._31DcoD')?.innerText.trim();
     
-    document.querySelectorAll('._206H7Z img, ._396cs4 img').forEach(img => {
+    doc.querySelectorAll('._206H7Z img, ._396cs4 img').forEach(img => {
        const src = img.src.replace(/q=\d+/, 'q=90');
        if (src && !data.images.includes(src)) data.images.push(src);
     });
 
-    document.querySelectorAll('._2418kt li').forEach(li => data.features.push(li.innerText.trim()));
-    document.querySelectorAll('._14u39f tr').forEach(tr => {
+    doc.querySelectorAll('._2418kt li').forEach(li => data.features.push(li.innerText.trim()));
+    doc.querySelectorAll('._14u39f tr').forEach(tr => {
       const key = tr.querySelector('._1hKm9u')?.innerText.trim();
       const val = tr.querySelector('._2vZqPX')?.innerText.trim();
       if (key && val) data.specifications[key] = val;
     });
+  }
+
+  // Ensure high quality images (min 6 if possible)
+  if (data.images.length > 0) {
+      data.images = data.images.map(img => {
+          if (isAmazon) return img.replace(/\._AC_.*_\./, '._AC_SL1500_.');
+          if (isFlipkart) return img.replace(/q=\d+/, 'q=90');
+          return img;
+      }).slice(0, 10);
   }
 
   return data;
@@ -122,12 +130,60 @@ function showToast(msg) {
     toast.className = 'sc-toast';
     toast.innerText = msg;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+async function fetchDeepData(url) {
+    try {
+        const res = await fetch(url);
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        return scrapeSingleProduct(doc, url);
+    } catch (e) {
+        console.error("Deep fetch failed for " + url, e);
+        return null;
+    }
 }
 
 function injectButtons() {
     const isAmazon = window.location.href.includes('amazon');
     const isFlipkart = window.location.href.includes('flipkart');
+    const url = window.location.href;
+
+    const isSearch = isAmazon && (url.includes('/s?') || url.includes('/b?') || url.includes('/browse/')) || 
+                     isFlipkart && (url.includes('/search?') || url.includes('/p/') === false);
+
+    if (isSearch && !document.getElementById('sc-bulk-collect')) {
+        const btn = document.createElement('button');
+        btn.id = 'sc-bulk-collect';
+        btn.className = 'sc-bulk-btn';
+        btn.innerHTML = '🚀 Deep Collect First 10 (Full Data + 6+ Images)';
+        btn.onclick = async () => {
+            btn.innerHTML = '⏳ Scraping... Please wait (~15s)';
+            btn.classList.add('sc-loading');
+            
+            const results = scrapeProducts();
+            const targets = results.slice(0, 10);
+            let count = 0;
+            
+            for (const item of targets) {
+                if (item.url) {
+                    const deepData = await fetchDeepData(item.url);
+                    if (deepData && deepData.title) {
+                        await collectProduct(deepData);
+                        count++;
+                    }
+                }
+            }
+            
+            btn.innerHTML = '✅ Done! Collected ' + count + ' items';
+            btn.classList.remove('sc-loading');
+            showToast(`Deep Sync Complete! ${count} items added to collector.`);
+            setTimeout(() => { btn.innerHTML = '🚀 Deep Collect First 10 (Full Data + 6+ Images)'; }, 3000);
+        };
+        document.body.appendChild(btn);
+    }
 
     if (isAmazon) {
         const items = document.querySelectorAll('[data-component-type="s-search-result"]');
@@ -138,11 +194,14 @@ function injectButtons() {
                 const btn = document.createElement('button');
                 btn.className = 'sc-import-btn';
                 btn.innerHTML = '⚡ Import';
-                btn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const data = scrapeProducts().find(p => p.title === item.querySelector('h2 a span')?.innerText.trim());
-                    if (data) collectProduct(data, btn);
+                btn.onclick = async (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    btn.innerHTML = '⏳';
+                    const link = item.querySelector('h2 a')?.href;
+                    if (link) {
+                        const deepData = await fetchDeepData(link);
+                        if (deepData) collectProduct(deepData, btn);
+                    }
                 };
                 container.appendChild(btn);
             }
@@ -154,16 +213,16 @@ function injectButtons() {
         items.forEach(item => {
             if (item.querySelector('.sc-import-btn')) return;
             const img = item.querySelector('img');
-            if (img && img.parentElement) {
+            const link = item.querySelector('a')?.href;
+            if (img && img.parentElement && link) {
                 const btn = document.createElement('button');
                 btn.className = 'sc-import-btn';
                 btn.innerHTML = '⚡ Import';
-                btn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const title = item.querySelector('._4rR01T, .ir_0P_ , ._2WkVRV')?.innerText.trim();
-                    const data = scrapeProducts().find(p => p.title === title);
-                    if (data) collectProduct(data, btn);
+                btn.onclick = async (e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    btn.innerHTML = '⏳';
+                    const deepData = await fetchDeepData(link);
+                    if (deepData) collectProduct(deepData, btn);
                 };
                 img.parentElement.appendChild(btn);
             }
@@ -171,21 +230,22 @@ function injectButtons() {
     }
 }
 
-async function collectProduct(data, btn) {
+async function collectProduct(data, btn = null) {
     try {
         const { sc_collected = [] } = await chrome.storage.local.get('sc_collected');
-        // Check for duplicates
         if (sc_collected.find(p => p.url === data.url)) {
-            showToast("Already Collected!");
+            if (btn) { btn.innerHTML = '✓'; btn.classList.add('sc-collected'); }
             return;
         }
         
         sc_collected.push(data);
         await chrome.storage.local.set({ sc_collected });
         
-        btn.innerHTML = '✓ Added';
-        btn.classList.add('sc-collected');
-        showToast("Product Collected! Open Admin to sync.");
+        if (btn) {
+            btn.innerHTML = '✓ Added';
+            btn.classList.add('sc-collected');
+            showToast("Product Collected with High Quality Images!");
+        }
     } catch (e) {
         console.error("Collection failed", e);
     }
@@ -196,7 +256,6 @@ async function syncWithAdmin() {
     if (window.location.href.includes('smartchoose.in/admin')) {
         const { sc_collected = [] } = await chrome.storage.local.get('sc_collected');
         if (sc_collected.length > 0) {
-            // Send data to the page using postMessage
             window.postMessage({ type: 'SC_SYNC_DATA', data: sc_collected }, '*');
         }
     }
@@ -204,17 +263,15 @@ async function syncWithAdmin() {
 
 // Initialize
 if (window.location.href.includes('amazon') || window.location.href.includes('flipkart')) {
-    setInterval(injectButtons, 2000);
+    setInterval(injectButtons, 2500);
 }
 
 if (window.location.href.includes('smartchoose.in')) {
     setInterval(syncWithAdmin, 3000);
-    
-    // Listen for clear message from page
     window.addEventListener('message', async (event) => {
         if (event.data?.type === 'SC_CLEAR_COLLECTED') {
             await chrome.storage.local.set({ sc_collected: [] });
-            showToast("Sync Successful!");
+            showToast("Bulk Sync Successful!");
         }
     });
 }
