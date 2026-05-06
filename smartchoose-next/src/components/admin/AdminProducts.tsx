@@ -116,6 +116,60 @@ export function AdminProducts() {
   const [isBroadcasting, setIsBroadcasting] = useState<string | null>(null);
   const [analyticsProductId, setAnalyticsProductId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [collectedItems, setCollectedItems] = useState<any[]>([]);
+
+  // Listen for Smart Collector extension messages
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SC_SYNC_DATA') {
+        setCollectedItems(event.data.data);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleCollectorSync = async () => {
+    if (collectedItems.length === 0) return;
+    
+    setToast({ show: true, message: `Syncing ${collectedItems.length} collected products...`, type: 'info' });
+    
+    let successCount = 0;
+    for (const item of collectedItems) {
+      const platform = detectEcommercePlatform(item.url || '');
+      const finalData = {
+        ...initialFormData,
+        title: item.title || 'Product',
+        fullTitle: item.title || '',
+        description: item.description || '',
+        price: item.price || '',
+        originalPrice: item.originalPrice || '',
+        discount: item.discount || '',
+        brand: item.brand || '',
+        images: item.images?.length > 0 ? item.images : [],
+        features: item.features || [],
+        specifications: item.specifications || {},
+        platform: platform.name,
+        affiliateLink: cleanAffiliateLink(item.url || ''),
+        affiliateLinks: [{ 
+          url: cleanAffiliateLink(item.url || ''), 
+          platform: platform.name, 
+          icon: platform.iconFile || 'generic.svg', 
+          price: item.price 
+        }],
+        published: true
+      };
+      
+      await addProduct(finalData as any);
+      successCount++;
+    }
+
+    // Tell extension to clear storage
+    window.postMessage({ type: 'SC_CLEAR_COLLECTED' }, '*');
+    setCollectedItems([]);
+    setToast({ show: true, message: `Successfully synced ${successCount} products from collector!`, type: 'success' });
+    loadProducts(1);
+  };
 
   const PAGE_SIZE = 20;
 
@@ -510,6 +564,28 @@ export function AdminProducts() {
             Inventory Manager
           </h1>
           <p className="text-slate-500 mt-1 font-bold text-xs uppercase tracking-widest opacity-60">High-Performance Affiliate Hub ({siteStats.totalProducts} items)</p>
+          
+          <AnimatePresence>
+            {collectedItems.length > 0 && (
+              <m.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-3 shadow-lg shadow-indigo-600/20"
+              >
+                <div className="flex -space-x-2">
+                  {collectedItems.slice(0, 3).map((item, i) => (
+                    <div key={i} className="w-6 h-6 rounded-full border-2 border-indigo-600 bg-white overflow-hidden">
+                      <img src={item.images?.[0]} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                  {collectedItems.length > 3 && <div className="w-6 h-6 rounded-full border-2 border-indigo-600 bg-indigo-400 flex items-center justify-center text-[8px] font-bold">+{collectedItems.length - 3}</div>}
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest">{collectedItems.length} Items Ready in Collector</span>
+                <button onClick={handleCollectorSync} className="bg-white text-indigo-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all">Sync All Now</button>
+              </m.div>
+            )}
+          </AnimatePresence>
         </div>
         <div className="flex flex-wrap gap-3">
           <button onClick={handleExtensionBulkPaste} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20">

@@ -1,0 +1,62 @@
+.sc-import-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10000;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sc-import-btn:hover {
+    background: #059669;
+    transform: scale(1.05);
+}
+
+.sc-import-btn.sc-collected {
+    background: #0f172a;
+    box-shadow: none;
+}
+
+.sc-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #0f172a;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+    z-index: 20000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border-left: 4px solid #10b981;
+    animation: sc-slide-up 0.4s ease-out;
+}
+
+@keyframes sc-slide-up {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Amazon specific adjustments */
+[data-component-type="s-search-result"] .s-product-image-container {
+    position: relative;
+}
+
+/* Flipkart specific adjustments */
+._1xHGtK, ._4ddWXP {
+    position: relative;
+}

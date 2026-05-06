@@ -11,7 +11,7 @@ function scrapeProducts() {
     const results = [];
     const items = document.querySelectorAll('[data-component-type="s-search-result"]');
     items.forEach((item, index) => {
-      if (index >= 20) return;
+      if (index >= 40) return; // Scrape more in background
       const titleEl = item.querySelector('h2 a span');
       const priceEl = item.querySelector('.a-price-whole');
       const imgEl = item.querySelector('img.s-image');
@@ -32,15 +32,11 @@ function scrapeProducts() {
 
   if (isFlipkartSearch) {
     const results = [];
-    // List view
     let items = document.querySelectorAll('._1AtVbE ._13oc-S');
-    if (items.length === 0) {
-      // Grid view
-      items = document.querySelectorAll('._4ddWXP, ._1xHGtK');
-    }
+    if (items.length === 0) items = document.querySelectorAll('._4ddWXP, ._1xHGtK');
 
     items.forEach((item, index) => {
-      if (index >= 20) return;
+      if (index >= 40) return;
       const titleEl = item.querySelector('._4rR01T, .ir_0P_ , ._2WkVRV');
       const priceEl = item.querySelector('._30jeq3');
       const imgEl = item.querySelector('img');
@@ -59,7 +55,6 @@ function scrapeProducts() {
     if (results.length > 0) return results;
   }
 
-  // Fallback to single product scraper
   return scrapeSingleProduct();
 }
 
@@ -69,17 +64,9 @@ function scrapeSingleProduct() {
   const isFlipkart = url.includes('flipkart');
 
   const data = {
-    title: '',
-    price: '',
-    originalPrice: '',
-    discount: '',
-    images: [],
-    features: [],
-    specifications: {},
-    brand: '',
-    rating: '4.5',
-    reviews: '0',
-    url: window.location.href
+    title: '', price: '', originalPrice: '', discount: '',
+    images: [], features: [], specifications: {},
+    brand: '', rating: '4.5', reviews: '0', url: window.location.href
   };
 
   if (isAmazon) {
@@ -89,8 +76,7 @@ function scrapeSingleProduct() {
     data.discount = document.querySelector('.savingsPercentage')?.innerText.trim();
     data.brand = document.querySelector('#bylineInfo')?.innerText.trim().replace('Brand: ', '');
     
-    const imgEls = document.querySelectorAll('#altImages img');
-    imgEls.forEach(img => {
+    document.querySelectorAll('#altImages img').forEach(img => {
       const src = img.src.replace(/\._AC_.*_\./, '.');
       if (src && !src.includes('video') && !data.images.includes(src)) data.images.push(src);
     });
@@ -118,10 +104,7 @@ function scrapeSingleProduct() {
        if (src && !data.images.includes(src)) data.images.push(src);
     });
 
-    document.querySelectorAll('._2418kt li').forEach(li => {
-      data.features.push(li.innerText.trim());
-    });
-
+    document.querySelectorAll('._2418kt li').forEach(li => data.features.push(li.innerText.trim()));
     document.querySelectorAll('._14u39f tr').forEach(tr => {
       const key = tr.querySelector('._1hKm9u')?.innerText.trim();
       const val = tr.querySelector('._2vZqPX')?.innerText.trim();
@@ -130,6 +113,110 @@ function scrapeSingleProduct() {
   }
 
   return data;
+}
+
+// ---- SMART COLLECTOR LOGIC ----
+
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'sc-toast';
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function injectButtons() {
+    const isAmazon = window.location.href.includes('amazon');
+    const isFlipkart = window.location.href.includes('flipkart');
+
+    if (isAmazon) {
+        const items = document.querySelectorAll('[data-component-type="s-search-result"]');
+        items.forEach(item => {
+            if (item.querySelector('.sc-import-btn')) return;
+            const container = item.querySelector('.s-product-image-container');
+            if (container) {
+                const btn = document.createElement('button');
+                btn.className = 'sc-import-btn';
+                btn.innerHTML = '⚡ Import';
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const data = scrapeProducts().find(p => p.title === item.querySelector('h2 a span')?.innerText.trim());
+                    if (data) collectProduct(data, btn);
+                };
+                container.appendChild(btn);
+            }
+        });
+    }
+
+    if (isFlipkart) {
+        const items = document.querySelectorAll('._1AtVbE ._13oc-S, ._4ddWXP, ._1xHGtK');
+        items.forEach(item => {
+            if (item.querySelector('.sc-import-btn')) return;
+            const img = item.querySelector('img');
+            if (img && img.parentElement) {
+                const btn = document.createElement('button');
+                btn.className = 'sc-import-btn';
+                btn.innerHTML = '⚡ Import';
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const title = item.querySelector('._4rR01T, .ir_0P_ , ._2WkVRV')?.innerText.trim();
+                    const data = scrapeProducts().find(p => p.title === title);
+                    if (data) collectProduct(data, btn);
+                };
+                img.parentElement.appendChild(btn);
+            }
+        });
+    }
+}
+
+async function collectProduct(data, btn) {
+    try {
+        const { sc_collected = [] } = await chrome.storage.local.get('sc_collected');
+        // Check for duplicates
+        if (sc_collected.find(p => p.url === data.url)) {
+            showToast("Already Collected!");
+            return;
+        }
+        
+        sc_collected.push(data);
+        await chrome.storage.local.set({ sc_collected });
+        
+        btn.innerHTML = '✓ Added';
+        btn.classList.add('sc-collected');
+        showToast("Product Collected! Open Admin to sync.");
+    } catch (e) {
+        console.error("Collection failed", e);
+    }
+}
+
+// Sync with SmartChoose Admin
+async function syncWithAdmin() {
+    if (window.location.href.includes('smartchoose.in/admin')) {
+        const { sc_collected = [] } = await chrome.storage.local.get('sc_collected');
+        if (sc_collected.length > 0) {
+            // Send data to the page using postMessage
+            window.postMessage({ type: 'SC_SYNC_DATA', data: sc_collected }, '*');
+        }
+    }
+}
+
+// Initialize
+if (window.location.href.includes('amazon') || window.location.href.includes('flipkart')) {
+    setInterval(injectButtons, 2000);
+}
+
+if (window.location.href.includes('smartchoose.in')) {
+    setInterval(syncWithAdmin, 3000);
+    
+    // Listen for clear message from page
+    window.addEventListener('message', async (event) => {
+        if (event.data?.type === 'SC_CLEAR_COLLECTED') {
+            await chrome.storage.local.set({ sc_collected: [] });
+            showToast("Sync Successful!");
+        }
+    });
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
