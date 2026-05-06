@@ -129,16 +129,15 @@ export function AdminProducts() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const handleCollectorSync = async () => {
-    if (collectedItems.length === 0) return;
-    
-    setToast({ show: true, message: `Syncing ${collectedItems.length} collected products...`, type: 'info' });
-    
+  const processAndSyncProducts = async (items: any[]) => {
     let successCount = 0;
-    for (const item of collectedItems) {
-      // VALIDATION: Skip if no images or title
-      if (!item.title || (!item.images?.length && !item.image)) {
-        console.warn("Skipping product due to missing data:", item.title);
+    const syncedProducts: any[] = [];
+
+    for (const item of items) {
+      // STRICT VALIDATION: Must have title and at least one image
+      const hasImages = (item.images && item.images.length > 0) || item.image;
+      if (!item.title || !hasImages) {
+        console.warn("Skipping high-fidelity sync: missing critical data", item.title);
         continue;
       }
 
@@ -147,7 +146,7 @@ export function AdminProducts() {
         ...initialFormData,
         title: item.title,
         fullTitle: item.title,
-        description: item.features?.join('\n\n') || item.description || '',
+        description: item.description || item.features?.join('\n\n') || '',
         price: item.price?.replace(/[₹,]/g, '') || '000',
         originalPrice: item.originalPrice?.replace(/[₹,]/g, '') || '',
         discount: item.discount || '',
@@ -167,22 +166,43 @@ export function AdminProducts() {
         published: true
       };
       
-      await addProduct(finalData as any);
-      successCount++;
+      const newId = await addProduct(finalData as any);
+      if (newId) {
+        successCount++;
+        syncedProducts.push({ ...finalData, id: newId });
+      }
     }
 
-    // Trigger Algolia Sync so products appear on website instantly
-    try {
-      setToast({ show: true, message: 'Syncing search engine...', type: 'info' });
-      await fetch('/api/sync-algolia', { method: 'POST' });
-    } catch (e) {
-      console.error("Algolia sync failed", e);
+    if (syncedProducts.length > 0) {
+      try {
+        setToast({ show: true, message: 'Syncing search engine...', type: 'info' });
+        // Correct API call for Algolia Sync
+        await fetch('/api/sync-algolia', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'sync_all', 
+            data: { products: syncedProducts } 
+          })
+        });
+      } catch (e) {
+        console.error("Algolia sync failed", e);
+      }
     }
+
+    return successCount;
+  };
+
+  const handleCollectorSync = async () => {
+    if (collectedItems.length === 0) return;
+    setToast({ show: true, message: `Syncing ${collectedItems.length} collected products...`, type: 'info' });
+    
+    const count = await processAndSyncProducts(collectedItems);
 
     // Tell extension to clear storage
     window.postMessage({ type: 'SC_CLEAR_COLLECTED' }, '*');
     setCollectedItems([]);
-    setToast({ show: true, message: `Successfully synced ${successCount} products from collector!`, type: 'success' });
+    setToast({ show: true, message: `Successfully synced ${count} products from collector!`, type: 'success' });
     loadProducts(1);
   };
 
@@ -384,7 +404,6 @@ export function AdminProducts() {
     try {
       const clipboardText = await navigator.clipboard.readText();
       const rawData = JSON.parse(clipboardText);
-      
       const dataArray = Array.isArray(rawData) ? rawData : [rawData];
       
       if (dataArray.length === 0) {
@@ -393,40 +412,9 @@ export function AdminProducts() {
       }
 
       setToast({ show: true, message: `Directly uploading ${dataArray.length} products to database...`, type: 'info' });
-      
-      let successCount = 0;
-      for (const item of dataArray) {
-        if (!item.title && !item.price) continue;
-        
-        const platform = detectEcommercePlatform(item.url || '');
-        const finalData = {
-          ...initialFormData,
-          title: item.title || 'Product',
-          fullTitle: item.title || '',
-          description: item.description || '',
-          price: item.price || '',
-          originalPrice: item.originalPrice || '',
-          discount: item.discount || '',
-          brand: item.brand || '',
-          images: item.images?.length > 0 ? item.images : [],
-          features: item.features || [],
-          specifications: item.specifications || {},
-          platform: platform.name,
-          affiliateLink: cleanAffiliateLink(item.url || ''),
-          affiliateLinks: [{ 
-            url: cleanAffiliateLink(item.url || ''), 
-            platform: platform.name, 
-            icon: platform.iconFile || 'generic.svg', 
-            price: item.price 
-          }],
-          published: true
-        };
-        
-        await addProduct(finalData as any);
-        successCount++;
-      }
+      const count = await processAndSyncProducts(dataArray);
 
-      setToast({ show: true, message: `Successfully imported ${successCount} products from extension!`, type: 'success' });
+      setToast({ show: true, message: `Successfully imported ${count} products from extension!`, type: 'success' });
       loadProducts(1);
     } catch (err) {
       setToast({ show: true, message: 'Invalid extension data. Copy from extension first.', type: 'error' });

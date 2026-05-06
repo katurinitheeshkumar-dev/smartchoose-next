@@ -53,18 +53,22 @@ function scrapeSingleProduct(doc = document, url = window.location.href) {
 
   const data = {
     title: '', price: '', originalPrice: '', discount: '',
-    images: [], features: [], specifications: {},
+    description: '', images: [], features: [], specifications: {},
     brand: '', rating: '4.5', reviews: '0', url: url, category: 'Electronics'
   };
 
   try {
     if (isAmazon) {
       data.title = (doc.querySelector('#productTitle') || doc.querySelector('.qa-title-text'))?.innerText.trim();
-      data.price = (doc.querySelector('.a-price-whole') || doc.querySelector('#priceblock_ourprice'))?.innerText.trim();
+      data.price = (doc.querySelector('.a-price-whole') || doc.querySelector('#priceblock_ourprice') || doc.querySelector('.a-price .a-offscreen'))?.innerText.trim();
       data.originalPrice = doc.querySelector('.a-text-strike')?.innerText.trim();
       data.discount = doc.querySelector('.savingsPercentage')?.innerText.trim();
       data.brand = (doc.querySelector('#bylineInfo') || doc.querySelector('#brand'))?.innerText.trim().replace('Brand: ', '');
       
+      // Full Description
+      const descEl = doc.querySelector('#productDescription') || doc.querySelector('#feature-bullets');
+      data.description = descEl?.innerText.trim() || '';
+
       // Get all images
       const imgList = [];
       doc.querySelectorAll('#altImages img, #imgTagWrapperId img, .a-spacing-small img').forEach(img => {
@@ -77,11 +81,11 @@ function scrapeSingleProduct(doc = document, url = window.location.href) {
             if (!imgList.includes(src)) imgList.push(src);
         }
       });
-      data.images = imgList.slice(0, 10);
+      data.images = imgList.filter(s => s.includes('http')).slice(0, 10);
 
       doc.querySelectorAll('#feature-bullets li span, .a-list-item').forEach(li => {
         const txt = li.innerText.trim();
-        if (txt && txt.length > 10) data.features.push(txt);
+        if (txt && txt.length > 5) data.features.push(txt);
       });
 
       doc.querySelectorAll('tr.a-spacing-small, .prodDetTable tr').forEach(tr => {
@@ -97,6 +101,9 @@ function scrapeSingleProduct(doc = document, url = window.location.href) {
       data.originalPrice = doc.querySelector('._3I9_wc._27W-Wc')?.innerText.trim();
       data.discount = doc.querySelector('._3Ay6Sb._31DcoD')?.innerText.trim();
       
+      const descEl = doc.querySelector('._1mXcCf') || doc.querySelector('._2K67m9');
+      data.description = descEl?.innerText.trim() || '';
+
       const imgList = [];
       doc.querySelectorAll('._206H7Z img, ._396cs4 img, ._2amPTt img').forEach(img => {
          let src = img.src;
@@ -105,7 +112,7 @@ function scrapeSingleProduct(doc = document, url = window.location.href) {
              if (!imgList.includes(src)) imgList.push(src);
          }
       });
-      data.images = imgList.slice(0, 10);
+      data.images = imgList.filter(s => s.includes('http')).slice(0, 10);
 
       doc.querySelectorAll('._2418kt li, ._21Ahn-').forEach(li => data.features.push(li.innerText.trim()));
       doc.querySelectorAll('._14u39f tr, ._3_60ls tr').forEach(tr => {
@@ -133,7 +140,8 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchDeepData(url) {
     try {
-        await sleep(Math.random() * 1000 + 500); // Human-like delay
+        // Human-like delay to avoid being blocked
+        await sleep(Math.random() * 2000 + 1000); 
         const res = await fetch(url);
         if (!res.ok) throw new Error("Fetch failed");
         const html = await res.text();
@@ -147,6 +155,7 @@ async function fetchDeepData(url) {
 }
 
 function injectButtons() {
+    if (!chrome.runtime?.id) return;
     const url = window.location.href;
     const isSearch = url.includes('/s?') || url.includes('/search?') || url.includes('/b?') || url.includes('/browse/') || (!url.includes('/dp/') && !url.includes('/p/'));
 
@@ -166,7 +175,7 @@ function injectButtons() {
             let count = 0;
             for (const item of targets) {
                 const deepData = await fetchDeepData(item.url);
-                if (deepData && deepData.title) {
+                if (deepData && deepData.title && (deepData.images?.length > 0 || deepData.image)) {
                     await collectProduct(deepData);
                     count++;
                     btn.innerHTML = `⏳ Scraping ${count}/${targets.length}...`;
@@ -194,7 +203,12 @@ function injectButtons() {
                 e.preventDefault(); e.stopPropagation();
                 btn.innerHTML = '⏳';
                 const deepData = await fetchDeepData(link);
-                if (deepData) collectProduct(deepData, btn);
+                if (deepData && deepData.title) {
+                    collectProduct(deepData, btn);
+                } else {
+                    btn.innerHTML = '❌ Fail';
+                    setTimeout(() => { btn.innerHTML = '⚡ Import'; }, 2000);
+                }
             };
             container.style.position = 'relative';
             container.appendChild(btn);
@@ -214,7 +228,12 @@ function injectButtons() {
                 e.preventDefault(); e.stopPropagation();
                 btn.innerHTML = '⏳';
                 const deepData = await fetchDeepData(link);
-                if (deepData) collectProduct(deepData, btn);
+                if (deepData && deepData.title) {
+                    collectProduct(deepData, btn);
+                } else {
+                    btn.innerHTML = '❌ Fail';
+                    setTimeout(() => { btn.innerHTML = '⚡ Import'; }, 2000);
+                }
             };
             imgContainer.style.position = 'relative';
             imgContainer.appendChild(btn);
