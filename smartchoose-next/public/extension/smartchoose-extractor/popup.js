@@ -28,6 +28,10 @@ async function init() {
       document.getElementById('status').innerText = "Failed to extract. Refresh page.";
     }
   });
+
+  document.getElementById('admin-btn').onclick = () => {
+    chrome.tabs.create({ url: 'https://www.smartchoose.in/admin/products' });
+  };
 }
 
 init();
