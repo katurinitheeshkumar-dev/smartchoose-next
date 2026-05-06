@@ -591,8 +591,12 @@ export function AdminProducts() {
           <button onClick={handleExtensionBulkPaste} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20">
             <Icon name="clipboard" size={16} className="text-emerald-400" /> Paste Extension Data
           </button>
-          <a href="/extension/SmartChoose-Extractor.zip" download className="bg-white border-2 border-slate-200 text-slate-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
-            <Icon name="download" size={16} className="text-emerald-500" /> Download Extension
+          <a href="/extension/SmartChoose-Extractor.zip" download className="bg-white border-2 border-slate-200 text-slate-600 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm group">
+            <Icon name="download" size={16} className="text-emerald-500" /> 
+            <div>
+              <p>Download Extension</p>
+              <p className="text-[7px] text-slate-400 font-normal normal-case group-hover:text-emerald-500">Extract &rarr; Load in Chrome</p>
+            </div>
           </a>
           <button onClick={() => setShowModal(true)} className="bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-xl shadow-emerald-500/30">
             <Icon name="plus" size={18} /> New Product
