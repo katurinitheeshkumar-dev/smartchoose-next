@@ -25,6 +25,7 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
   React.useEffect(() => {
     if (initialProducts && initialProducts.length > 0) {
       setTopProducts(initialProducts);
+      setCurrentSlide(0);
     }
   }, [initialProducts]);
 
@@ -196,12 +197,12 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
                         ease: [0.23, 1, 0.32, 1]
                       }}
                       className="absolute inset-0 cursor-pointer"
-                      onClick={() => window.open(`/product/${topProducts[currentSlide].id}`, '_self')}
+                      onClick={() => window.open(`/product/${(topProducts[currentSlide] || topProducts[0]).id}`, '_self')}
                     >
                       <div className="absolute inset-0 p-4 sm:p-8 flex items-center justify-center bg-white pb-24 sm:pb-32 aspect-square">
                         <Image 
-                          src={getProductImage(topProducts[currentSlide].images)} 
-                          alt={topProducts[currentSlide].title}
+                          src={getProductImage((topProducts[currentSlide] || topProducts[0]).images)} 
+                          alt={(topProducts[currentSlide] || topProducts[0]).title || 'Product'}
                           width={600}
                           height={600}
                           priority={true}
@@ -214,19 +215,19 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
                       <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 z-30">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-widest shadow-lg shadow-emerald-100">
-                            <Icon name={(topProducts[currentSlide] as any).sliderIcon || "sparkles"} size={8} />
-                            {(topProducts[currentSlide] as any).sliderBadge || "Trending Deal"}
+                            <Icon name={((topProducts[currentSlide] || topProducts[0]) as any).sliderIcon || "sparkles"} size={8} />
+                            {((topProducts[currentSlide] || topProducts[0]) as any).sliderBadge || "Trending Deal"}
                           </div>
-                          {topProducts[currentSlide].category && (
+                          {(topProducts[currentSlide] || topProducts[0]).category && (
                             <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[8px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
-                              {topProducts[currentSlide].category}
+                              {(topProducts[currentSlide] || topProducts[0]).category}
                             </div>
                           )}
                         </div>
-                        <h3 className="text-lg sm:text-xl font-bold mb-1 line-clamp-1 tracking-tight text-slate-900">{topProducts[currentSlide].title}</h3>
+                        <h3 className="text-lg sm:text-xl font-bold mb-1 line-clamp-1 tracking-tight text-slate-900">{(topProducts[currentSlide] || topProducts[0]).title}</h3>
                         <div className="flex items-center gap-4">
                           <div className="flex flex-col">
-                            <span className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tighter">₹{formatPrice(topProducts[currentSlide].price)}</span>
+                            <span className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tighter">₹{formatPrice((topProducts[currentSlide] || topProducts[0]).price)}</span>
                           </div>
                           <div className="ml-auto flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg transition-all font-bold text-[10px] shadow-lg shadow-emerald-100 hover:bg-emerald-700 hover:scale-105">
                              View Details <Icon name="arrow-right" size={14} />
