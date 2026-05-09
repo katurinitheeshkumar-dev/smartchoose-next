@@ -212,9 +212,16 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
                       <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent z-20" />
                       
                       <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 z-30">
-                        <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-widest mb-2 shadow-lg shadow-emerald-100">
-                          <Icon name="sparkles" size={8} />
-                          Trending Deal
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-widest shadow-lg shadow-emerald-100">
+                            <Icon name="sparkles" size={8} />
+                            Trending Deal
+                          </div>
+                          {topProducts[currentSlide].category && (
+                            <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[8px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
+                              {topProducts[currentSlide].category}
+                            </div>
+                          )}
                         </div>
                         <h3 className="text-lg sm:text-xl font-bold mb-1 line-clamp-1 tracking-tight text-slate-900">{topProducts[currentSlide].title}</h3>
                         <div className="flex items-center gap-4">

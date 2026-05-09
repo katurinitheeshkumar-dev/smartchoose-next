@@ -149,11 +149,15 @@ export function AdminProducts() {
 
       const platform = detectEcommercePlatform(itemUrl);
       const cleanPrice = (item.price || '').replace(/[₹,\s]/g, '');
+      const itemTitle = item.fullTitle || item.title;
+      const itemDesc = item.description || '';
       const finalData = {
         ...initialFormData,
-        title: item.fullTitle || item.title,
-        fullTitle: item.fullTitle || item.title,
-        description: item.description || '',
+        title: itemTitle,
+        fullTitle: itemTitle,
+        description: itemDesc,
+        seoTitle: item.seoTitle || itemTitle,
+        seoDescription: item.seoDescription || (itemDesc.length > 150 ? itemDesc.substring(0, 150) + '...' : itemDesc),
         price: cleanPrice || '',
         originalPrice: (item.originalPrice || '').replace(/[₹,\s]/g, ''),
         discount: item.discount || '',
@@ -309,9 +313,13 @@ export function AdminProducts() {
 
   const handleEdit = (product: any) => {
     setEditingProduct(product);
+    const itemTitle = product.fullTitle || product.title;
+    const itemDesc = product.description || '';
     setFormData({ 
       ...initialFormData,
       ...product,
+      seoTitle: product.seoTitle || itemTitle,
+      seoDescription: product.seoDescription || (itemDesc.length > 150 ? itemDesc.substring(0, 150) + '...' : itemDesc),
       affiliateLinks: product.affiliateLinks || [{ url: product.affiliateLink || '', platform: 'Store', icon: 'generic.svg' }]
     });
     setSourceUrl('');
@@ -453,7 +461,9 @@ export function AdminProducts() {
         brand: data.brand || prev.brand,
         images: data.images?.length > 0 ? data.images : prev.images,
         features: data.features?.length > 0 ? data.features : prev.features,
-        specifications: data.specifications || prev.specifications
+        specifications: data.specifications || prev.specifications,
+        seoTitle: data.seoTitle || data.title || prev.seoTitle,
+        seoDescription: data.seoDescription || (data.description ? data.description.substring(0, 150) + '...' : prev.seoDescription)
       }));
 
       setToast({ show: true, message: 'Extension Data Imported!', type: 'success' });
@@ -471,7 +481,9 @@ export function AdminProducts() {
             brand: data.brand || prev.brand,
             images: data.images?.length > 0 ? data.images : prev.images,
             features: data.features?.length > 0 ? data.features : prev.features,
-            specifications: data.specifications || prev.specifications
+            specifications: data.specifications || prev.specifications,
+            seoTitle: data.seoTitle || data.title || prev.seoTitle,
+            seoDescription: data.seoDescription || (data.description ? data.description.substring(0, 150) + '...' : prev.seoDescription)
           }));
           setToast({ show: true, message: 'Extension Data Imported!', type: 'success' });
         } catch (e) {
