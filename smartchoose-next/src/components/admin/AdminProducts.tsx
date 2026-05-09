@@ -4,7 +4,7 @@ import { Icon } from '@/components/ui/custom/Icon';
 import { PlatformIcon } from '@/components/ui/custom/PlatformIcon';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { Toast } from '@/components/ui/custom/Toast';
-import { detectEcommercePlatform, cleanAffiliateLink } from '@/lib/utils';
+import { detectEcommercePlatform, cleanAffiliateLink, formatPrice, parsePrice } from '@/lib/utils';
 import { AnalyticsDetailModal } from './AnalyticsDetailModal';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -766,8 +766,8 @@ export function AdminProducts() {
                       </div>
                     </td>
                     <td className="px-5 py-3 text-sm">
-                      <div className="font-black text-slate-900">{product.price}</div>
-                      {product.originalPrice && <div className="text-[10px] text-slate-400 line-through font-bold">{product.originalPrice}</div>}
+                      <div className="font-black text-slate-900">{formatPrice(parsePrice(product.price))}</div>
+                      {product.originalPrice && <div className="text-[10px] text-slate-400 line-through font-bold">{formatPrice(parsePrice(product.originalPrice))}</div>}
                     </td>
                     <td className="px-5 py-3"><PlatformBadge url={product.affiliateLink} name={product.platform} /></td>
                     <td className="px-5 py-3 text-right">

@@ -268,9 +268,9 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
 
             {/* Price */}
             <div className="flex items-baseline gap-4">
-              <span className="text-4xl font-bold text-slate-900">{product.price}</span>
+              <span className="text-4xl font-bold text-slate-900">{formatPrice(parsePrice(product.price))}</span>
               {product.originalPrice && (
-                <span className="text-xl text-slate-400 line-through">{product.originalPrice}</span>
+                <span className="text-xl text-slate-400 line-through">{formatPrice(parsePrice(product.originalPrice))}</span>
               )}
               {product.discount && (
                 <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-sm font-bold rounded-full">
@@ -381,7 +381,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
                   onClick={async () => {
                     const url = getProductUrl(product.id);
                     const title = product.title;
-                    const text = `🛍️ Check this out on SmartChoose!\n\n*${product.title}*\n💰 ${product.price}\n\n`;
+                    const text = `🛍️ Check this out on SmartChoose!\n\n*${product.title}*\n💰 ${formatPrice(parsePrice(product.price))}\n\n`;
                     
                     if (navigator.share) {
                       try {

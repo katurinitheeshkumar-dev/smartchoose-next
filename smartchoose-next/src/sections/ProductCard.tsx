@@ -166,9 +166,9 @@ export function ProductCard({ product, highlighted = false, onCopy }: ProductCar
         <div className="flex items-end justify-between mb-1 sm:mb-2">
           <div>
             <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-              <span className="text-base sm:text-2xl font-bold text-slate-900">{product.price}</span>
+              <span className="text-base sm:text-2xl font-bold text-slate-900">{formatPrice(parsePrice(product.price))}</span>
               {product.originalPrice && (
-                <span className="text-[11px] sm:text-sm text-slate-600 line-through">{product.originalPrice}</span>
+                <span className="text-[11px] sm:text-sm text-slate-600 line-through">{formatPrice(parsePrice(product.originalPrice))}</span>
               )}
             </div>
             {isAdmin && (

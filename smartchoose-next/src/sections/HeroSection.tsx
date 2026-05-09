@@ -4,6 +4,7 @@ import { useDatabase } from '@/contexts/DatabaseContext';
 import React from 'react';
 import Image from 'next/image';
 import { useSearch } from '@/contexts/SearchContext';
+import { formatPrice, parsePrice } from '@/lib/utils';
 
 const categories = [
   { id: 'mobiles', name: 'Mobiles', icon: 'smartphone', color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -85,13 +86,7 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
     return `https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200&auto=format&fit=crop`;
   };
 
-  const formatPrice = (priceStr: string | number | null | undefined) => {
-    if (priceStr === null || priceStr === undefined) return '0';
-    const clean = priceStr.toString().replace(/[₹\s,]/g, '');
-    const num = Number(clean);
-    if (isNaN(num)) return '0';
-    return new Intl.NumberFormat('en-IN').format(num);
-  };
+
 
   return (
     <section className="relative pt-20 pb-8 sm:pt-32 sm:pb-20 overflow-hidden bg-slate-50 scroll-smooth">
@@ -229,7 +224,7 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
                         <h3 className="text-lg sm:text-xl font-bold mb-1 line-clamp-1 tracking-tight text-slate-900">{(topProducts[currentSlide] || topProducts[0]).title}</h3>
                         <div className="flex items-center gap-4">
                           <div className="flex flex-col">
-                            <span className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tighter">₹{formatPrice((topProducts[currentSlide] || topProducts[0]).price)}</span>
+                            <span className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tighter">{formatPrice(parsePrice((topProducts[currentSlide] || topProducts[0]).price))}</span>
                           </div>
                           <div className="ml-auto flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg transition-all font-bold text-[10px] shadow-lg shadow-emerald-100 hover:bg-emerald-700 hover:scale-105">
                              View Details <Icon name="arrow-right" size={14} />
