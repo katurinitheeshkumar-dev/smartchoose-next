@@ -43,18 +43,14 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   const { isAdmin } = useAdmin();
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   
-  const [products, setProducts] = useState<Product[]>(() => safeGetItem('sc_products_cache', []));
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => safeGetItem('sc_blog_cache', []));
-  const [jobs, setJobs] = useState<Job[]>(() => safeGetItem('sc_jobs_cache', []));
+  const [products, setProducts] = useState<Product[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [isJobsLoading, setIsJobsLoading] = useState(true);
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(() => {
-    const saved = safeGetItem('sc_social', null);
-    if (saved && Array.isArray(saved) && saved.length > 0) return saved;
-    return [];
-  });
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [analytics, setAnalytics] = useState<Analytics>(defaultAnalytics);
   const [siteStats, setSiteStats] = useState<SiteStats>({
     totalProducts: 0,
@@ -65,8 +61,15 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     totalJobs: 0
   });
   
-  // ONE-TIME EMERGENCY PURGE (Fixes existing QuotaExceededErrors for returning users)
+  // Initial Load from Cache
   useEffect(() => {
+    setProducts(safeGetItem('sc_products_cache', []));
+    setBlogPosts(safeGetItem('sc_blog_cache', []));
+    setJobs(safeGetItem('sc_jobs_cache', []));
+    
+    const savedSocial = safeGetItem('sc_social', null);
+    if (savedSocial && Array.isArray(savedSocial)) setSocialLinks(savedSocial);
+
     const lastPurge = localStorage.getItem('sc_last_purge_v3');
     if (!lastPurge) {
       console.warn('🚀 Performing One-Time Stability Purge...');

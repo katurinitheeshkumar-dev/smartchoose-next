@@ -7,13 +7,17 @@ export type NotificationTopic = 'jobs' | 'products' | 'blog';
 
 export function useNotifications(topic: NotificationTopic) {
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
-  const [isDismissed, setIsDismissed] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`sc_notify_dismissed_${topic}`) === 'true';
-    }
-    return false;
-  });
+  const [isDismissed, setIsDismissed] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`sc_notify_dismissed_${topic}`);
+      if (saved === 'true') setIsDismissed(true);
+    }
+  }, [topic]);
 
   const dismiss = useCallback(() => {
     setIsDismissed(true);
@@ -89,5 +93,5 @@ export function useNotifications(topic: NotificationTopic) {
     }
   };
 
-  return { isSubscribed, subscribe, loading, isDismissed, dismiss };
+  return { isSubscribed, subscribe, loading, isDismissed: isMounted ? isDismissed : false, dismiss };
 }
