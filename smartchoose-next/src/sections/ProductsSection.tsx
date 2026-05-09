@@ -179,11 +179,7 @@ export function ProductsSection({
 
       setLocalProducts(docs);
       
-      // Scroll to top of section on page change
-      if (currentPage > 1 || selectedCategory !== 'All') {
-        const element = document.getElementById('products-section');
-        if (element) element.scrollIntoView({ behavior: 'smooth' });
-      }
+
 
     } catch (error) {
       console.error("Error fetching products via REST:", error);
