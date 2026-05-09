@@ -104,7 +104,7 @@ export function ProductsSection({
             filters: filters,
           }
         },
-        limit: PRODUCTS_PER_PAGE,
+        limit: 100, // Fetch up to 100 to sort client-side without indexes
       };
 
       // Note: Infinite scroll pagination with REST API is complex without orderBy.
@@ -138,6 +138,13 @@ export function ProductsSection({
           }
           return result;
         });
+
+      // Sort by newest first
+      docs.sort((a: any, b: any) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return db - da;
+      });
 
       const currentIds = new Set(localProducts.map(p => p.id));
       const newDocs = docs.filter((d: any) => !currentIds.has(d.id));

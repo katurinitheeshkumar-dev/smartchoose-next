@@ -170,13 +170,22 @@ export async function getHeroProducts(): Promise<Product[]> {
 }
 
 export async function getFeaturedProducts(count: number = 12): Promise<Product[]> {
+  // Fetch a larger pool to sort in-memory (avoids composite index requirements)
   const products = await firestoreQuery(
     'products',
     [makeFilter('published', 'EQUAL', true, 'booleanValue')],
-    [], // No orderBy — avoids composite index requirement
-    count
-  );
-  return products as Product[];
+    [], 
+    50
+  ) as Product[];
+
+  // Sort by newest first
+  products.sort((a, b) => {
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db - da; // Descending order (newest first)
+  });
+
+  return products.slice(0, count);
 }
 
 export async function getLatestBlogs(count: number = 4): Promise<BlogPost[]> {
