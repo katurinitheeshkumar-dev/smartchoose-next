@@ -44,9 +44,9 @@ export function ProductImage({ src, alt, className = '', fallbackClassName = '',
         width={600}
         height={600}
         priority={isPriority}
-        quality={85}
-        className={`w-full h-full object-contain p-4 transition-all duration-500 ${isLoading ? 'scale-105 blur-sm' : 'scale-100 blur-0'}`}
-        onLoadingComplete={() => setIsLoading(false)}
+        unoptimized={true}
+        className={`w-full h-full object-contain p-4 transition-all duration-300 ${isLoading ? 'scale-105 opacity-0' : 'scale-100 opacity-100'}`}
+        onLoad={() => setIsLoading(false)}
         onError={() => setError(true)}
         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
       />
