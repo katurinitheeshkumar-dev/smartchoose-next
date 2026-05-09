@@ -32,7 +32,7 @@ const CATEGORIES = [
   'Home & Kitchen',
 ];
 
-const PRODUCTS_PER_PAGE = 12;
+const PRODUCTS_PER_PAGE = 50;
 
 export function ProductsSection({
   initialProducts = [],
@@ -44,6 +44,8 @@ export function ProductsSection({
   const { isProductsLoading: contextLoading } = useDatabase();
   const [localProducts, setLocalProducts] = useState<any[]>(initialProducts);
   const [isBatchLoading, setIsBatchLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalHits, setTotalHits] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(initialProducts.length === 0);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState<any>(null);
@@ -109,7 +111,8 @@ export function ProductsSection({
             filters: filters,
           }
         },
-        limit: 100, // Fetch up to 100 to sort client-side without indexes
+        limit: PRODUCTS_PER_PAGE,
+        offset: (currentPage - 1) * PRODUCTS_PER_PAGE,
       };
 
       // Note: Infinite scroll pagination with REST API is complex without orderBy.
@@ -174,10 +177,12 @@ export function ProductsSection({
         setHasMore(false);
       }
 
-      if (isLoadMore) {
-        setLocalProducts(prev => [...prev, ...newDocs]);
-      } else {
-        setLocalProducts(docs);
+      setLocalProducts(docs);
+      
+      // Scroll to top of section on page change
+      if (currentPage > 1 || selectedCategory !== 'All') {
+        const element = document.getElementById('products-section');
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
       }
 
     } catch (error) {
@@ -199,14 +204,17 @@ export function ProductsSection({
           {
             indexName: 'products',
             query: searchQuery,
-            hitsPerPage: 50
+            page: currentPage - 1,
+            hitsPerPage: PRODUCTS_PER_PAGE
           }
         ]
       }).then((response: any) => {
         const hits = response.results[0].hits || [];
+        const nbHits = response.results[0].nbHits || 0;
         const mappedHits = hits.map((hit: any) => ({ ...hit, id: hit.objectID || hit.id }));
         setLocalProducts(mappedHits);
-        setHasMore(false);
+        setTotalHits(nbHits);
+        setHasMore(nbHits > currentPage * PRODUCTS_PER_PAGE);
       }).catch(err => {
         console.error('Algolia product search error:', err);
       }).finally(() => {
@@ -231,26 +239,23 @@ export function ProductsSection({
     setLocalProducts([]);
     setLastDoc(null);
     setHasMore(true);
+    setCurrentPage(1); // Reset to page 1 on category change
     fetchProducts(false);
   }, [selectedCategory]);
 
-  // Infinite Scroll Observer
+  // Page Change
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isBatchLoading && !isInitialLoading && hasMore) {
-          fetchProducts(true);
-        }
-      },
-      { threshold: 0.1, rootMargin: '200px' }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    if (!initialLoadDone.current) {
+      fetchProducts(false);
+    } else {
+      initialLoadDone.current = false;
     }
+  }, [currentPage]);
 
-    return () => observer.disconnect();
-  }, [hasMore, isBatchLoading, isInitialLoading, lastDoc]);
+  // Total pages calculation
+  const { siteStats } = useDatabase();
+  const totalItems = searchQuery ? totalHits : (selectedCategory === 'All' ? siteStats.totalPublishedProducts : localProducts.length + (hasMore ? PRODUCTS_PER_PAGE : 0));
+  const totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
 
   // Scroll to products when searching
   useEffect(() => {
@@ -335,23 +340,56 @@ export function ProductsSection({
           )}
         </div>
 
-        {/* Sentinel for Infinite Scroll */}
-        {!isInitialLoading && hasMore && (
-          <div 
-            ref={observerTarget} 
-            className="h-32 flex items-center justify-center mt-8"
-          >
-            {isBatchLoading && (
-               <div className="flex flex-col items-center gap-3 text-slate-400">
-                  <Icon name="loader-2" size={28} className="animate-spin text-emerald-500" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Syncing Feed...</span>
-               </div>
-            )}
+        {/* Pagination Controls */}
+        {!isInitialLoading && totalPages > 1 && (
+          <div className="mt-16 flex flex-col items-center gap-6">
+            <div className="flex flex-wrap justify-center items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:border-emerald-500 hover:text-emerald-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+              >
+                <Icon name="chevron-left" size={20} />
+              </button>
+              
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                let pageNum = currentPage;
+                if (totalPages <= 5) pageNum = i + 1;
+                else if (currentPage <= 3) pageNum = i + 1;
+                else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                else pageNum = currentPage - 2 + i;
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-12 h-12 rounded-2xl font-black text-sm transition-all border shadow-sm ${
+                      currentPage === pageNum
+                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-emerald-500/20'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-500 hover:text-emerald-500'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:border-emerald-500 hover:text-emerald-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+              >
+                <Icon name="chevron-right" size={20} />
+              </button>
+            </div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Showing Page {currentPage} of {totalPages}
+            </p>
           </div>
         )}
 
         {/* End of Content Marker */}
-        {!isInitialLoading && !hasMore && filteredProducts.length > 0 && (
+        {!isInitialLoading && !hasMore && filteredProducts.length > 0 && totalPages <= 1 && (
            <div className="mt-16 text-center">
               <div className="inline-flex items-center gap-2 px-6 py-2 bg-slate-100 rounded-full text-slate-400 text-xs font-bold uppercase tracking-widest">
                 <Icon name="package" size={14} />

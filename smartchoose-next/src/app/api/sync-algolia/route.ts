@@ -11,8 +11,11 @@ const INDEX_NAME = 'products';
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
-    // Ensure we only accept requests from trusted admin contexts
-    if (process.env.ADMIN_SECRET_KEY && authHeader !== `Bearer ${process.env.ADMIN_SECRET_KEY}`) {
+    const adminKey = request.headers.get('x-admin-key');
+    const secret = process.env.ADMIN_SECRET_KEY || 'smart-choose-2024';
+    
+    // Check either Bearer token or custom admin key header
+    if (authHeader !== `Bearer ${secret}` && adminKey !== secret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

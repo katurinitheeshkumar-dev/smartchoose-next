@@ -133,19 +133,33 @@ export function AdminProducts() {
     let successCount = 0;
     const syncedProducts: any[] = [];
 
-    for (const item of items) {
+    // LIMIT: Max 20 products at once to prevent performance issues and API timeouts
+    const itemsToProcess = items.slice(0, 20);
+    const skippedItems: string[] = [];
+
+    for (const item of itemsToProcess) {
       // Support both 'url' (new) and 'affiliateLink' (legacy) field names from extension
       const itemUrl = item.url || item.affiliateLink || '';
       
-      // STRICT VALIDATION: Must have title
+      // STRICT VALIDATION: Must have title, price, and images
       if (!item.title || item.title.length < 3) {
-        console.warn('Skipping: missing title', item);
+        skippedItems.push(item.title || 'Untitled');
         continue;
       }
 
       const imageList: string[] = item.images?.length > 0
         ? item.images
         : item.image ? [item.image] : [];
+      
+      if (imageList.length === 0) {
+        skippedItems.push(item.title);
+        continue;
+      }
+
+      if (!item.price) {
+        skippedItems.push(item.title);
+        continue;
+      }
 
       const platform = detectEcommercePlatform(itemUrl);
       const cleanPrice = (item.price || '').replace(/[₹,\s]/g, '');
@@ -190,7 +204,10 @@ export function AdminProducts() {
         // Correct API call for Algolia Sync
         await fetch('/api/sync-algolia', { 
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-key': 'smart-choose-2024'
+          },
           body: JSON.stringify({ 
             action: 'sync_all', 
             data: { products: syncedProducts } 
@@ -201,6 +218,10 @@ export function AdminProducts() {
       }
     }
 
+    if (skippedItems.length > 0) {
+      setToast({ show: true, message: `Imported ${successCount} items. Skipped ${skippedItems.length} due to missing details.`, type: 'info' });
+    }
+    
     return successCount;
   };
 
@@ -498,7 +519,14 @@ export function AdminProducts() {
   const [showBulkImport, setShowBulkImport] = useState(false);
 
   const handleBulkImport = async () => {
-    const urls = bulkImportUrls.split('\n').map(u => u.trim()).filter(u => u.length > 5);
+    let urls = bulkImportUrls.split('\n').map(u => u.trim()).filter(u => u.length > 5);
+    
+    // LIMIT: Max 20 URLs at once
+    if (urls.length > 20) {
+      setToast({ show: true, message: 'Max 20 products allowed per bulk upload. Trimming list...', type: 'info' });
+      urls = urls.slice(0, 20);
+    }
+    
     if (urls.length === 0) return;
     
     setIsBulkImporting(true);
@@ -515,6 +543,11 @@ export function AdminProducts() {
         const data = await res.json();
         if (data.success && data.data) {
           const platform = detectEcommercePlatform(url);
+          // SKIP IF DETAILS ARE MISSING
+          if (!data.data.fullTitle && !data.data.title) continue;
+          if (!data.data.price) continue;
+          if (!data.data.images?.length && !data.data.image) continue;
+
           const finalData = {
             title: data.data.fullTitle || data.data.title || 'Product',
             fullTitle: data.data.fullTitle || data.data.title || '',
