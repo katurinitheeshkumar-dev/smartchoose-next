@@ -158,8 +158,8 @@ export function ProductCard({ product, highlighted = false, onCopy }: ProductCar
         {/* Rating */}
         <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
           <Icon name="star" size={12} className="text-amber-400 fill-amber-400" />
-          <span className="font-semibold text-xs sm:text-sm text-slate-700">{product.rating}</span>
-          <span className="text-slate-600 text-xs sm:text-sm hidden sm:inline">({product.reviews.toLocaleString()})</span>
+          <span className="font-semibold text-xs sm:text-sm text-slate-700">{product.rating || 0}</span>
+          <span className="text-slate-600 text-xs sm:text-sm hidden sm:inline">({(product.reviews || 0).toLocaleString()})</span>
         </div>
 
         {/* Price & CTA */}
@@ -175,11 +175,11 @@ export function ProductCard({ product, highlighted = false, onCopy }: ProductCar
               <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                 <span className="flex items-center gap-1">
                   <Icon name="eye" size={12} />
-                  {product.views.toLocaleString()}
+                  {(product.views || 0).toLocaleString()}
                 </span>
                 <span className="flex items-center gap-1">
                   <Icon name="mouse-pointer-click" size={12} />
-                  {product.clicks.toLocaleString()}
+                  {(product.clicks || 0).toLocaleString()}
                 </span>
               </div>
             )}

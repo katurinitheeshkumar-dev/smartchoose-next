@@ -124,10 +124,12 @@ export function ProductsSection({
       
       const data = await res.json();
       const docs = (data || [])
-        .filter((item: any) => item.document)
+        .filter((item: any) => item && item.document && item.document.name)
         .map((item: any) => {
           const fields = item.document.fields || {};
-          const result: any = { id: item.document.name.split('/').pop() };
+          const nameParts = item.document.name.split('/');
+          const id = nameParts[nameParts.length - 1];
+          const result: any = { id };
           
           // Basic parser for needed fields
           for (const [k, v] of Object.entries(fields)) {
@@ -149,9 +151,9 @@ export function ProductsSection({
           return db - da;
         });
       }
-
-      const currentIds = new Set(localProducts.map(p => p.id));
-      const newDocs = docs.filter((d: any) => !currentIds.has(d.id));
+      
+      const currentIds = new Set(localProducts.filter(p => p && p.id).map(p => p.id));
+      const newDocs = docs.filter((d: any) => d && d.id && !currentIds.has(d.id));
 
       if (docs.length < PRODUCTS_PER_PAGE || (isLoadMore && newDocs.length === 0)) {
         setHasMore(false);
