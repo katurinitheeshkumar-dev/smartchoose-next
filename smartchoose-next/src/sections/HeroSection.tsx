@@ -214,8 +214,8 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
                       <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 z-30">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-widest shadow-lg shadow-emerald-100">
-                            <Icon name="sparkles" size={8} />
-                            Trending Deal
+                            <Icon name={(topProducts[currentSlide] as any).sliderIcon || "sparkles"} size={8} />
+                            {(topProducts[currentSlide] as any).sliderBadge || "Trending Deal"}
                           </div>
                           {topProducts[currentSlide].category && (
                             <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[8px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">

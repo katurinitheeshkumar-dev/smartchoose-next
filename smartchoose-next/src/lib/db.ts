@@ -108,13 +108,65 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function getHeroProducts(): Promise<Product[]> {
+  // Fetch a larger pool of published products to filter in-memory (avoids composite index errors)
   const products = await firestoreQuery(
     'products',
     [makeFilter('published', 'EQUAL', true, 'booleanValue')],
-    [], // No orderBy — avoids composite index requirement
-    10
-  );
-  return products as Product[];
+    [], 
+    50
+  ) as Product[];
+
+  if (products.length === 0) return [];
+
+  const selected: Product[] = [];
+  const selectedIds = new Set<string>();
+
+  const addProduct = (p: Product | undefined, badge: string, icon: string) => {
+    if (p && !selectedIds.has(p.id)) {
+      selected.push({ ...p, sliderBadge: badge, sliderIcon: icon } as any);
+      selectedIds.add(p.id);
+    }
+  };
+
+  // 1. Newly uploaded product (sort by createdAt descending)
+  const newest = [...products].sort((a, b) => {
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db - da;
+  })[0];
+  addProduct(newest, 'New Arrival', 'sparkles');
+
+  // 2. Trending product (highest views)
+  const trending = [...products].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
+  addProduct(trending, 'Most Viewed', 'eye');
+
+  // 3. Most clicked product
+  const mostClicked = [...products].sort((a, b) => (b.clicks || 0) - (a.clicks || 0))[0];
+  addProduct(mostClicked, 'Hot Deal', 'flame');
+
+  // 4. One product from each main category
+  const categories = [
+    'Smartphones & Accessories', 
+    'Laptops & Computers', 
+    'Home Appliances', 
+    'Electronics',
+    'Fashion', 
+    'Home & Kitchen'
+  ];
+
+  for (const cat of categories) {
+    const catProd = products.find(p => p.category === cat && !selectedIds.has(p.id));
+    if (catProd) addProduct(catProd, 'Top Choice', 'star');
+  }
+
+  // Fill the rest with other random products if we have less than 6
+  let i = 0;
+  while (selected.length < 6 && i < products.length) {
+    addProduct(products[i], 'Featured', 'award');
+    i++;
+  }
+
+  return selected;
 }
 
 export async function getFeaturedProducts(count: number = 12): Promise<Product[]> {
