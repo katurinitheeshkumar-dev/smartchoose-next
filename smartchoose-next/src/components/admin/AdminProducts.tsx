@@ -134,34 +134,41 @@ export function AdminProducts() {
     const syncedProducts: any[] = [];
 
     for (const item of items) {
-      // STRICT VALIDATION: Must have title and at least one image
-      const hasImages = (item.images && item.images.length > 0) || item.image;
-      if (!item.title || !hasImages) {
-        console.warn("Skipping high-fidelity sync: missing critical data", item.title);
+      // Support both 'url' (new) and 'affiliateLink' (legacy) field names from extension
+      const itemUrl = item.url || item.affiliateLink || '';
+      
+      // STRICT VALIDATION: Must have title
+      if (!item.title || item.title.length < 3) {
+        console.warn('Skipping: missing title', item);
         continue;
       }
 
-      const platform = detectEcommercePlatform(item.url || '');
+      const imageList: string[] = item.images?.length > 0
+        ? item.images
+        : item.image ? [item.image] : [];
+
+      const platform = detectEcommercePlatform(itemUrl);
+      const cleanPrice = (item.price || '').replace(/[₹,\s]/g, '');
       const finalData = {
         ...initialFormData,
-        title: item.title,
-        fullTitle: item.title,
-        description: item.description || item.features?.join('\n\n') || '',
-        price: item.price?.replace(/[₹,]/g, '') || '000',
-        originalPrice: item.originalPrice?.replace(/[₹,]/g, '') || '',
+        title: item.fullTitle || item.title,
+        fullTitle: item.fullTitle || item.title,
+        description: item.description || '',
+        price: cleanPrice || '',
+        originalPrice: (item.originalPrice || '').replace(/[₹,\s]/g, ''),
         discount: item.discount || '',
-        brand: item.brand || '',
-        images: item.images?.length > 0 ? item.images : [item.image].filter(Boolean),
+        brand: item.brand || (platform.name !== 'Store' ? platform.name : ''),
+        images: imageList,
         features: item.features || [],
         specifications: item.specifications || {},
         category: item.category || 'Electronics',
-        platform: platform.name,
-        affiliateLink: cleanAffiliateLink(item.url || ''),
+        platform: item.platform || platform.name,
+        affiliateLink: cleanAffiliateLink(itemUrl),
         affiliateLinks: [{ 
-          url: cleanAffiliateLink(item.url || ''), 
-          platform: platform.name, 
+          url: cleanAffiliateLink(itemUrl), 
+          platform: item.platform || platform.name, 
           icon: platform.iconFile || 'generic.svg', 
-          price: item.price?.replace(/[₹,]/g, '') || '000'
+          price: cleanPrice || ''
         }],
         published: true
       };

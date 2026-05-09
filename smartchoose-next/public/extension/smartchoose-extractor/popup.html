@@ -1,29 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <style>
-    body { width: 300px; padding: 15px; font-family: sans-serif; background: #f8fafc; }
-    .btn { 
-      background: #10b981; color: white; border: none; padding: 12px; 
-      width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer;
-      margin-top: 10px;
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      width: 340px;
+      padding: 16px;
+      margin: 0;
+      background: #f8fafc;
+      color: #0f172a;
     }
-    .btn:hover { background: #059669; }
-    .status { font-size: 12px; color: #64748b; margin-bottom: 10px; }
-    h2 { margin: 0 0 10px 0; font-size: 16px; color: #1e293b; }
-    #data-preview { 
-      font-size: 10px; background: #fff; border: 1px solid #e2e8f0; 
-      padding: 8px; border-radius: 4px; max-height: 100px; overflow-y: auto;
-      display: none;
+    h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid #e2e8f0;
+    }
+    .status {
+      font-size: 13px;
+      margin-bottom: 12px;
+      color: #475569;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      line-height: 1.5;
+    }
+    .status-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .status-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .status-warn    { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .status-info    { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .btn {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 13px;
+      width: 100%;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .btn:hover { filter: brightness(0.92); }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-blue { background: #3b82f6; }
+    .settings {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .settings label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .settings input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    .settings input:focus { border-color: #10b981; }
+    .hint { font-size: 9px; color: #94a3b8; margin-top: -8px; margin-bottom: 8px; }
+    ul {
+      margin: 10px 0 0;
+      padding-left: 16px;
+      font-size: 11px;
+      color: #64748b;
+      max-height: 160px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    ul li { margin-bottom: 3px; }
   </style>
 </head>
 <body>
-  <h2>SmartChoose Extractor</h2>
-  <div id="status" class="status">Open Amazon or Flipkart to extract data.</div>
-  <pre id="data-preview"></pre>
-   <button id="copy-btn" class="btn">Copy JSON Data</button>
-   <button id="admin-btn" class="btn" style="background: #0f172a; margin-top: 5px;">Go to Admin</button>
+  <h2>
+    <img src="https://smartchoose.in/favicon.ico" width="20" onerror="this.style.display='none'">
+    SmartChoose Fetcher
+  </h2>
+
+  <div class="card">
+    <div id="status" class="status">Open an Amazon.in or Flipkart.com page, then click Extract.</div>
+
+    <button id="extractBtn" class="btn">⚡ Extract Products</button>
+    <button id="sendBtn" class="btn btn-blue" style="display: none; margin-top: 10px;">📋 Copy & Open Admin Panel</button>
+
+    <div class="settings">
+      <label>Amazon Associate Tag</label>
+      <input type="text" id="amazonTag" placeholder="your-tag-21">
+
+      <label>EarnKaro / Manual Link <span style="color:#f59e0b;">(optional)</span></label>
+      <input type="text" id="manualAffiliate" placeholder="Paste EarnKaro link to override all links">
+      <p class="hint">If set, overrides all product affiliate links.</p>
+    </div>
+
+    <ul id="productList"></ul>
+  </div>
 
   <script src="popup.js"></script>
 </body>

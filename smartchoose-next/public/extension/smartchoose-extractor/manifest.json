@@ -1,31 +1,23 @@
 {
   "manifest_version": 3,
   "name": "SmartChoose Extractor Pro",
-  "version": "1.2",
-  "description": "Smart Collector for SmartChoose Admin. One-click import from Amazon & Flipkart.",
-  "permissions": ["activeTab", "scripting", "storage", "unlimitedStorage"],
+  "version": "2.0",
+  "description": "One-click product extractor for SmartChoose Admin. Works on Amazon.in & Flipkart.com.",
+  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite", "clipboardRead"],
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon.png"
-  },
-  "icons": {
-    "128": "icon.png"
+    "default_popup": "popup.html"
   },
   "host_permissions": [
     "*://*.amazon.in/*",
     "*://*.amazon.com/*",
-    "*://*.flipkart.com/*"
-  ],
-  "content_scripts": [
-    {
-      "matches": ["*://*.amazon.in/*", "*://*.flipkart.com/*", "*://*.amazon.com/*", "*://smartchoose.in/admin/*", "*://www.smartchoose.in/admin/*"],
-      "js": ["content.js"],
-      "css": ["styles.css"]
-    }
+    "*://*.flipkart.com/*",
+    "*://smartchoose.in/*",
+    "*://www.smartchoose.in/*",
+    "*://localhost/*"
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icon.png", "styles.css"],
+      "resources": ["scraper.js"],
       "matches": ["<all_urls>"]
     }
   ]
