@@ -7,6 +7,11 @@ import { Toast } from '@/components/ui/custom/Toast';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationPopup } from '@/components/ui/custom/NotificationPopup';
 import { useSearch } from '@/contexts/SearchContext';
+import { algoliasearch } from 'algoliasearch';
+
+const ALGOLIA_APP_ID = "P0Z3D6UVHU";
+const ALGOLIA_SEARCH_KEY = "e35a248fd899d0140303755dbc36adff";
+const searchClient = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_SEARCH_KEY);
 
 interface ProductsSectionProps {
   searchQuery: string;
@@ -56,26 +61,12 @@ export function ProductsSection({
       return localProducts.filter(p => p.published && (selectedCategory === 'All' || p.category === selectedCategory));
     }
 
-    const filtered = localProducts.filter(product => {
+    // When searchQuery is present, localProducts comes from Algolia which already did the text search.
+    // We only need to apply the category filter.
+    return localProducts.filter(product => {
       const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = 
-        product.title.toLowerCase().includes(q) ||
-        product.description.toLowerCase().includes(q) ||
-        product.category.toLowerCase().includes(q);
-      return matchesCategory && matchesSearch && product.published;
+      return matchesCategory && (product.published !== false); // Algolia might not return boolean published field properly, assume true if it's in algolia index
     });
-
-    filtered.sort((a, b) => {
-      const q = searchQuery.toLowerCase();
-      const aTitle = a.title.toLowerCase().includes(q);
-      const bTitle = b.title.toLowerCase().includes(q);
-      if (aTitle && !bTitle) return -1;
-      if (!aTitle && bTitle) return 1;
-      return 0;
-    });
-
-    return filtered;
   }, [localProducts, selectedCategory, searchQuery]);
 
   // Firestore REST Fetch Function
@@ -148,15 +139,15 @@ export function ProductsSection({
           return result;
         });
 
-      if (docs.length < PRODUCTS_PER_PAGE) {
+      const currentIds = new Set(localProducts.map(p => p.id));
+      const newDocs = docs.filter((d: any) => !currentIds.has(d.id));
+
+      if (docs.length < PRODUCTS_PER_PAGE || (isLoadMore && newDocs.length === 0)) {
         setHasMore(false);
       }
 
       if (isLoadMore) {
-        setLocalProducts(prev => {
-          const newDocs = docs.filter((d: any) => !prev.find(p => p.id === d.id));
-          return [...prev, ...newDocs];
-        });
+        setLocalProducts(prev => [...prev, ...newDocs]);
       } else {
         setLocalProducts(docs);
       }
@@ -169,6 +160,35 @@ export function ProductsSection({
       setIsInitialLoading(false);
     }
   };
+
+  // Search logic via Algolia
+  useEffect(() => {
+    if (searchQuery) {
+      setIsInitialLoading(true);
+      searchClient.search({
+        requests: [
+          {
+            indexName: 'products',
+            query: searchQuery,
+            hitsPerPage: 50
+          }
+        ]
+      }).then((response: any) => {
+        const hits = response.results[0].hits || [];
+        const mappedHits = hits.map((hit: any) => ({ ...hit, id: hit.objectID || hit.id }));
+        setLocalProducts(mappedHits);
+        setHasMore(false);
+      }).catch(err => {
+        console.error('Algolia product search error:', err);
+      }).finally(() => {
+        setIsInitialLoading(false);
+      });
+    } else if (!initialLoadDone.current) {
+      // Revert to initial products if search cleared and we aren't switching categories
+      setLocalProducts(initialProducts);
+      setHasMore(true);
+    }
+  }, [searchQuery, initialProducts]);
 
 
   // Category Change (Reset)
