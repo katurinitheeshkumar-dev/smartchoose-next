@@ -51,6 +51,7 @@ export function ProductsSection({
   const observerTarget = useRef<HTMLDivElement>(null);
   // Track if we've done the initial load — prevents wiping server-provided initialProducts
   const initialLoadDone = useRef(initialProducts.length > 0);
+  const loadingRef = useRef(false);
 
   const { isSubscribed, subscribe, loading, isDismissed, dismiss } = useNotifications('products');
 
@@ -73,9 +74,11 @@ export function ProductsSection({
 
   // Firestore REST Fetch Function
   const fetchProducts = async (isLoadMore = false) => {
+    if (loadingRef.current) return;
     try {
+      loadingRef.current = true;
       if (isLoadMore) setIsBatchLoading(true);
-      else if (localProducts.length === 0) setIsInitialLoading(true);
+      else if (!localProducts || localProducts.length === 0) setIsInitialLoading(true);
 
       const PROJECT_ID = 'smartchoose-official';
       const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
@@ -123,6 +126,24 @@ export function ProductsSection({
       if (!res.ok) throw new Error(`Firestore REST failed: ${res.status}`);
       
       const data = await res.json();
+      // Recursive Firestore REST parser
+      const parseValue = (val: any): any => {
+        if (!val) return null;
+        if ('stringValue' in val) return val.stringValue;
+        if ('integerValue' in val) return Number(val.integerValue);
+        if ('doubleValue' in val) return val.doubleValue;
+        if ('booleanValue' in val) return val.booleanValue;
+        if ('timestampValue' in val) return val.timestampValue;
+        if ('arrayValue' in val) return (val.arrayValue?.values || []).map(parseValue);
+        if ('mapValue' in val) {
+          const res: any = {};
+          const f = val.mapValue.fields || {};
+          for (const [k, v] of Object.entries(f)) res[k] = parseValue(v);
+          return res;
+        }
+        return null;
+      };
+
       const docs = (data || [])
         .filter((item: any) => item && item.document && item.document.name)
         .map((item: any) => {
@@ -131,14 +152,8 @@ export function ProductsSection({
           const id = nameParts[nameParts.length - 1];
           const result: any = { id };
           
-          // Basic parser for needed fields
           for (const [k, v] of Object.entries(fields)) {
-            const val: any = v;
-            if ('stringValue' in val) result[k] = val.stringValue;
-            else if ('integerValue' in val) result[k] = Number(val.integerValue);
-            else if ('doubleValue' in val) result[k] = val.doubleValue;
-            else if ('booleanValue' in val) result[k] = val.booleanValue;
-            else if ('arrayValue' in val) result[k] = (val.arrayValue.values || []).map((av: any) => av.stringValue || av.mapValue);
+            result[k] = parseValue(v);
           }
           return result;
         });
@@ -171,6 +186,7 @@ export function ProductsSection({
     } finally {
       setIsBatchLoading(false);
       setIsInitialLoading(false);
+      loadingRef.current = false;
     }
   };
 
