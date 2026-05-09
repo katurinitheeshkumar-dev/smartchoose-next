@@ -346,13 +346,21 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
         {/* Header Section (Title & Byline) - MSN STYLE */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <div className="max-w-4xl pt-8">
-            <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-6">
-              <a href="/" onClick={(e) => { e.preventDefault(); router.push('/'); }} className="hover:underline">Home</a>
-              <Icon name="chevron-right" size={10} />
-              <a href="/blog" onClick={(e) => { e.preventDefault(); router.push('/blog'); }} className="hover:underline">Blog</a>
-              <Icon name="chevron-right" size={10} />
-              <span className="text-slate-400 truncate">{post.category}</span>
-            </nav>
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={() => router.back()}
+                className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all group"
+              >
+                <Icon name="arrow-left" size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+              </button>
+              <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                <a href="/" onClick={(e) => { e.preventDefault(); router.push('/'); }} className="hover:underline">Home</a>
+                <Icon name="chevron-right" size={10} />
+                <a href="/blog" onClick={(e) => { e.preventDefault(); router.push('/blog'); }} className="hover:underline">Blog</a>
+                <Icon name="chevron-right" size={10} />
+                <span className="text-slate-400 truncate">{post.category}</span>
+              </nav>
+            </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-[1.1] tracking-tight mb-8">
               {post.title}

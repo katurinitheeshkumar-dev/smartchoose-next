@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { ensureAbsoluteUrl } from '@/lib/utils';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Helmet } from 'react-helmet-async';
 import { Icon } from '@/components/ui/custom/Icon';
@@ -10,6 +10,7 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 
 export default function JobDetailPage({ initialJob }: { initialJob?: any }) {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const id = params?.id;
   const { jobs, getJobById, recordJobView, recordJobApply, settings } = useDatabase();
   const { toggleBookmark, isBookmarked } = useBookmarks();
@@ -128,12 +129,13 @@ export default function JobDetailPage({ initialJob }: { initialJob?: any }) {
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Back Link */}
-        <Link href="/jobs" 
-          className="inline-flex items-center gap-2 text-slate-500 font-bold hover:text-emerald-600 transition-colors py-2 px-4 bg-white rounded-2xl border border-slate-100 shadow-sm"
+        <button 
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-2 text-slate-500 font-bold hover:text-emerald-600 transition-colors py-2 px-4 bg-white rounded-2xl border border-slate-100 shadow-sm group"
         >
-          <Icon name="arrow-left" size={18} />
-          Back to All Jobs
-        </Link>
+          <Icon name="arrow-left" size={18} className="group-hover:-translate-x-0.5 transition-transform" />
+          Back
+        </button>
 
         {/* Job Header */}
         <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-6 relative overflow-hidden">

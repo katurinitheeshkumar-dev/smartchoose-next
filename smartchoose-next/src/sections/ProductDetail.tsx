@@ -8,6 +8,7 @@ import { m } from 'framer-motion';
 import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useRouter } from 'next/navigation';
 
 import { Toast } from '@/components/ui/custom/Toast';
 import { detectEcommercePlatform, parsePrice, formatPrice, getPlatformByName } from '@/lib/utils';
@@ -20,6 +21,7 @@ interface ProductDetailProps {
 }
 
 export function ProductDetail({ productId, onBack, initialProduct }: ProductDetailProps) {
+  const router = useRouter();
   const { products, getProductById, recordClick, recordView, getProductUrl, isInitialLoading } = useDatabase();
   const { isAdmin } = useAdmin();
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as const });
@@ -194,15 +196,15 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
         </nav>
 
         {/* Back Button */}
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors mb-6"
-          >
-            <Icon name="arrow-left" size={20} />
-            {isAdmin ? 'Back to Admin' : 'Back to Website'}
-          </button>
-        )}
+        <button
+          onClick={() => onBack ? onBack() : router.back()}
+          className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 transition-colors mb-6 group"
+        >
+          <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:border-emerald-200 group-hover:bg-emerald-50 transition-all">
+            <Icon name="arrow-left" size={18} />
+          </div>
+          <span className="font-bold">{onBack && isAdmin ? 'Back to Admin' : 'Go Back'}</span>
+        </button>
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-2 gap-12">
