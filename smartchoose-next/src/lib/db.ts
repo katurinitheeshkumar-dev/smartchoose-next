@@ -67,7 +67,9 @@ async function firestoreQuery(collectionPath: string, filters: any[], orderField
     if (!res.ok) throw new Error(`Firestore query failed: ${res.status}`);
     
     const data = await res.json();
-    return (data || [])
+    if (!Array.isArray(data)) return [];
+    
+    return data
       .filter((item: any) => item.document)
       .map((item: any) => {
         const name: string = item.document.name;

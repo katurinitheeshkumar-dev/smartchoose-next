@@ -85,10 +85,12 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
     return `https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200&auto=format&fit=crop`;
   };
 
-  const formatPrice = (priceStr: string | number) => {
-    if (!priceStr) return '0';
+  const formatPrice = (priceStr: string | number | null | undefined) => {
+    if (priceStr === null || priceStr === undefined) return '0';
     const clean = priceStr.toString().replace(/[₹\s,]/g, '');
-    return new Intl.NumberFormat('en-IN').format(Number(clean));
+    const num = Number(clean);
+    if (isNaN(num)) return '0';
+    return new Intl.NumberFormat('en-IN').format(num);
   };
 
   return (

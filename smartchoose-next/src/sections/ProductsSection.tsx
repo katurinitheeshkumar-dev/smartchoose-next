@@ -57,8 +57,10 @@ export function ProductsSection({
   const categories = CATEGORIES;
 
   const filteredProducts = useMemo(() => {
+    if (!localProducts || !Array.isArray(localProducts)) return [];
+
     if (!searchQuery) {
-      return localProducts.filter(p => p.published && (selectedCategory === 'All' || p.category === selectedCategory));
+      return localProducts.filter(p => p && p.published && (selectedCategory === 'All' || p.category === selectedCategory));
     }
 
     // When searchQuery is present, localProducts comes from Algolia which already did the text search.
@@ -140,11 +142,13 @@ export function ProductsSection({
         });
 
       // Sort by newest first
-      docs.sort((a: any, b: any) => {
-        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return db - da;
-      });
+      if (Array.isArray(docs)) {
+        docs.sort((a: any, b: any) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return db - da;
+        });
+      }
 
       const currentIds = new Set(localProducts.map(p => p.id));
       const newDocs = docs.filter((d: any) => !currentIds.has(d.id));
@@ -195,7 +199,7 @@ export function ProductsSection({
       setLocalProducts(initialProducts);
       setHasMore(true);
     }
-  }, [searchQuery, initialProducts]);
+  }, [searchQuery]);
 
 
   // Category Change (Reset)
