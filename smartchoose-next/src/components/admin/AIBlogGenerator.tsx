@@ -6,7 +6,7 @@ import { useDatabase } from '@/contexts/DatabaseContext';
 
 interface AIBlogGeneratorProps {
   onClose: () => void;
-  onGenerated: (post: any) => void;
+  onGenerated: (post: any, autoPublish?: boolean) => void;
 }
 
 export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) {
@@ -18,8 +18,10 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
   const [apiKey, setApiKey] = useState(settings.geminiApiKey || '');
   const [showKeyInput, setShowKeyInput] = useState(!settings.geminiApiKey);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [autoPublishMode, setAutoPublishMode] = useState(false);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (publishImmediately: boolean = false) => {
+    setAutoPublishMode(publishImmediately);
     if (!title.trim() || !apiKey.trim()) {
       setShowKeyInput(true);
       return;
@@ -54,14 +56,18 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
           const statusRes = await fetch(`/api/workflows/status?runId=${runId}`);
           const data = await statusRes.json();
 
-          if (data.status === 'COMPLETED') {
+          if (data.status?.toUpperCase() === 'COMPLETED') {
             setStatus('Success! Finalizing...');
-            onGenerated(data.output);
-            setIsGenerating(false);
+            if (data.output) {
+              onGenerated(data.output, publishImmediately);
+              setIsGenerating(false);
+            } else {
+              throw new Error('Workflow completed but no output received.');
+            }
             return;
           }
 
-          if (data.status === 'FAILED') {
+          if (data.status?.toUpperCase() === 'FAILED') {
             throw new Error(data.error || 'Workflow failed');
           }
 
@@ -204,13 +210,25 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
               </div>
             </div>
           ) : (
-            <button
-              onClick={handleGenerate}
-              disabled={!title.trim()}
-              className="w-full py-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-lg rounded-2xl shadow-xl shadow-amber-200 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
-            >
-              GENERATE SEO BLOG POST
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => handleGenerate(false)}
+                disabled={!title.trim()}
+                className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-base rounded-2xl shadow-xl shadow-amber-200 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
+              >
+                <Icon name="sparkles" size={20} />
+                GENERATE AS DRAFT
+              </button>
+              <button
+                onClick={() => handleGenerate(true)}
+                disabled={!title.trim()}
+                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-base rounded-2xl shadow-xl shadow-emerald-200 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
+              >
+                <Icon name="zap" size={20} />
+                GENERATE &amp; AUTO-PUBLISH ✓
+              </button>
+              <p className="text-center text-[10px] text-slate-400">Auto-Publish: Blog is instantly live on your website</p>
+            </div>
           )}
         </div>
 

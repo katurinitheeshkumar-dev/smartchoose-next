@@ -9,12 +9,16 @@ import { useRouter } from 'next/navigation';
 
 import { AdminAgentControl } from './AdminAgentControl';
 import { db } from '@/lib/firebase';
+import { AIBlogGenerator } from './AIBlogGenerator';
 
 export function AdminOverview() {
   const { analytics, siteStats, repairStats, fetchInquiries } = useDatabase();
   const [drillDownType, setDrillDownType] = useState<DrillDownType>(null);
   const [isRepairing, setIsRepairing] = useState(false);
+  const [showAIBlogGen, setShowAIBlogGen] = useState(false);
   const router = useRouter();
+  const [daysSinceLastBlog, setDaysSinceLastBlog] = useState<number | null>(null);
+  const [lastBlogTitle, setLastBlogTitle] = useState<string>('');
 
   const handleRepair = async () => {
     setIsRepairing(true);
@@ -80,6 +84,21 @@ export function AdminOverview() {
           });
           const top = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
           if (top) setTopCategory([top[0], top[1]]);
+        }
+
+        // 3. Fetch Last Blog Post Date
+        const qLastBlog = query(collection(db, 'blogPosts'), orderBy('updatedAt', 'desc'), limit(1));
+        const snapLastBlog = await getDocs(qLastBlog);
+        if (!snapLastBlog.empty) {
+          const lastBlog = snapLastBlog.docs[0].data();
+          const lastDate = lastBlog.updatedAt || lastBlog.createdAt;
+          if (lastDate) {
+            const diff = Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24));
+            setDaysSinceLastBlog(diff);
+            setLastBlogTitle(lastBlog.title || '');
+          }
+        } else {
+          setDaysSinceLastBlog(999); // No blogs at all
         }
       } catch (e) {
         console.warn('Dashboard Data Fetch Error:', e);
@@ -196,11 +215,33 @@ export function AdminOverview() {
               <div className="space-y-4">
                  <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
                    <p className="text-[10px] font-black uppercase text-indigo-200 mb-1">Engagement Tip</p>
-                   <p className="text-xs font-medium leading-relaxed">Your "Fashion" category has 40% higher CTR. Consider adding more wearables.</p>
+                   <p className="text-xs font-medium leading-relaxed">Your "{topCategory[0]}" category has top performance. Consider adding more products in this niche.</p>
                  </div>
                  <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
                    <p className="text-[10px] font-black uppercase text-indigo-200 mb-1">Content Gap</p>
-                   <p className="text-xs font-medium leading-relaxed">You haven't posted a blog in 3 days. AI suggests a "Top 5 Smartphones" guide.</p>
+                   {daysSinceLastBlog === null ? (
+                     <p className="text-xs font-medium leading-relaxed opacity-60">Checking blog activity...</p>
+                   ) : daysSinceLastBlog >= 3 ? (
+                     <div>
+                       <p className="text-xs font-medium leading-relaxed mb-3">
+                         {daysSinceLastBlog === 999
+                           ? "No blogs posted yet! Start building your content library."
+                           : `You haven't posted a blog in ${daysSinceLastBlog} days. AI suggests a "Top 5 Smartphones" guide.`
+                         }
+                       </p>
+                       <button
+                         onClick={() => setShowAIBlogGen(true)}
+                         className="w-full py-2 px-4 bg-white text-indigo-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
+                       >
+                         <Icon name="zap" size={12} />
+                         Generate &amp; Publish Now
+                       </button>
+                     </div>
+                   ) : (
+                     <p className="text-xs font-medium leading-relaxed">
+                       ✅ Great! Last blog posted {daysSinceLastBlog === 0 ? 'today' : `${daysSinceLastBlog} day(s) ago`}. Keep the momentum going!
+                     </p>
+                   )}
                  </div>
               </div>
            </div>
@@ -232,6 +273,29 @@ export function AdminOverview() {
         <AnalyticsDetailModal
           type={drillDownType}
           onClose={() => setDrillDownType(null)}
+        />
+      )}
+
+      {/* AI Blog Generator Modal */}
+      {showAIBlogGen && (
+        <AIBlogGenerator
+          onClose={() => setShowAIBlogGen(false)}
+          onGenerated={async (data, autoPublish) => {
+            setShowAIBlogGen(false);
+            if (autoPublish) {
+              try {
+                const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+                const now = new Date().toISOString();
+                await addDoc(collection(db, 'blogPosts'), { ...data, status: 'published', createdAt: now, updatedAt: now });
+                alert('✅ Blog auto-published! Refresh to see it in the list.');
+                setDaysSinceLastBlog(0);
+              } catch (e) {
+                alert('Auto-publish failed. Go to Blog Posts section to publish manually.');
+              }
+            } else {
+              router.push('/admin/blog');
+            }
+          }}
         />
       )}
     </div>

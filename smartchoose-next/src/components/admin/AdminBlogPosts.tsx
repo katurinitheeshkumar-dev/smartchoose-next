@@ -442,10 +442,30 @@ export function AdminBlogPosts() {
         {showAIGenerator && (
           <AIBlogGenerator 
             onClose={() => setShowAIGenerator(false)}
-            onGenerated={(data) => {
-              setEditingPost(data as any);
-              setView('editor');
+            onGenerated={async (data, autoPublish) => {
               setShowAIGenerator(false);
+              if (autoPublish) {
+                // Auto-publish: save directly to Firebase as 'published'
+                setIsSaving(true);
+                try {
+                  const publishData = { ...data, status: 'published' };
+                  const id = await addBlog(publishData);
+                  broadcastBlog(id);
+                  setToast('✅ Blog published successfully!');
+                  setTimeout(() => setToast(''), 3000);
+                  loadBlogs(1);
+                } catch (e) {
+                  alert('Auto-publish failed. Please try saving manually.');
+                  setEditingPost(data as any);
+                  setView('editor');
+                } finally {
+                  setIsSaving(false);
+                }
+              } else {
+                // Draft mode: open in editor
+                setEditingPost(data as any);
+                setView('editor');
+              }
             }}
           />
         )}

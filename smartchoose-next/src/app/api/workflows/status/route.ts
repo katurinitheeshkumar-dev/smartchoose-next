@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const status = await run.status;
     let output = null;
     
-    if (status === 'completed') {
+    if (status?.toUpperCase() === 'COMPLETED') {
       output = await run.returnValue;
     }
 
