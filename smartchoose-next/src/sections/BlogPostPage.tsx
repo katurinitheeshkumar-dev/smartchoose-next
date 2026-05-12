@@ -391,7 +391,7 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
               height="480"
               fetchPriority="high"
               decoding="sync"
-              className="w-full aspect-[21/9] object-cover hover:scale-105 transition-transform duration-[3s]" 
+              className="w-full aspect-[16/9] object-cover hover:scale-105 transition-transform duration-[3s]" 
               onError={(e) => { e.currentTarget.src = getPlaceholder(post.category); }}
             />
           </div>

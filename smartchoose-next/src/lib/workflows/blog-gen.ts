@@ -4,7 +4,7 @@ import { collection, addDoc } from 'firebase/firestore';
 
 // Helper to call Gemini API from the server
 async function callGemini(prompt: string, apiKey: string, isJson: boolean = false) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -45,7 +45,7 @@ export async function dailyAutoPostWorkflow(input: { apiKey: string }) {
   const now = new Date().toISOString();
   const blogPost = {
     ...meta,
-    content: `<div>${meta.intro}</div>${bodyHtml}<div>${extra.conclusion}</div>`,
+    content: `${bodyHtml}<div>${extra.conclusion}</div>`,
     products: extra.products,
     featuredImage: imageUrl,
     status: 'published' as const,
@@ -85,7 +85,7 @@ export async function blogGenerationWorkflow(input: { title: string; style: stri
   const now = new Date().toISOString();
   return {
     ...meta,
-    content: `<div>${meta.intro}</div>${bodyHtml}<div>${extra.conclusion}</div>`,
+    content: `${bodyHtml}<div>${extra.conclusion}</div>`,
     products: extra.products,
     featuredImage: imageUrl,
     status: 'draft' as const,
@@ -100,16 +100,18 @@ export async function blogGenerationWorkflow(input: { title: string; style: stri
 async function planBlogStep(title: string, style: string, apiKey: string) {
   "use step";
   const prompt = `
-    As an expert SEO strategist, create the metadata for a blog about: "${title}".
+    As an expert SEO strategist for SmartChoose.in, create the metadata for a blog about: "${title}".
     Style: ${style}
-    IMPORTANT: Return ONLY a valid JSON object. No markdown, no preamble.
+    TARGET: Budget-conscious Indian buyers. Use Indian context.
+    IMPORTANT: STICK TO CORRECT SPELLING (e.g., "Smartwatch" NOT "Smartch Whatch").
+    IMPORTANT: Return ONLY a valid JSON object.
     {
-      "title": "Final SEO Title",
+      "title": "Optimized SEO Title with Power Words",
       "slug": "url-friendly-slug",
       "category": "Gadgets|Phones|Laptops|Lifestyle|Deals",
-      "intro": "A 2-3 paragraph engaging introduction",
-      "seoTitle": "Meta title (60 chars)",
-      "seoDescription": "Meta description (155 chars)",
+      "intro": "A highly engaging 3-paragraph introduction (300 words) that hooks the reader instantly.",
+      "seoTitle": "Meta title (under 60 chars)",
+      "seoDescription": "Meta description (under 155 chars) with high CTR potential.",
       "tags": ["tag1", "tag2", "tag3"]
     }
   `;
@@ -135,12 +137,15 @@ async function planBlogStep(title: string, style: string, apiKey: string) {
 async function writeContentStep(title: string, intro: string, apiKey: string) {
   "use step";
   const prompt = `
-    Write the main body content for the blog: "${title}".
+    Write the main body content for a high-authority blog: "${title}".
     Intro already written was: "${intro}"
     Requirements:
-    - Write at least 4-6 detailed sections with <h2> and <h3> tags.
-    - Use HTML format (headers, paragraphs, bold text).
-    - Focus on quality, authority, and depth.
+    - STICK TO CORRECT SPELLING (e.g., "Smartwatch" NOT "Smartch Whatch").
+    - Write at least 6-8 detailed sections using <h2> and <h3> tags.
+    - Each section must have deep technical analysis or practical value.
+    - Use HTML format (headers, paragraphs, bold text, bullet points).
+    - Use Rupee (₹) symbols for all prices.
+    - Focus on the Indian market.
     - DO NOT include introduction or conclusion yet.
     Return ONLY the HTML string.
   `;

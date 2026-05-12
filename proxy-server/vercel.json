@@ -1,18 +1,10 @@
 {
     "version": 2,
     "functions": {
-        "api/fetch-product.js": {
-            "maxDuration": 15
-        },
-        "api/ai-blog-helper.js": {
-            "maxDuration": 60
-        },
-        "api/broadcast.js": {
-            "maxDuration": 30
-        },
-        "api/dynamic-feeds.js": {
-            "maxDuration": 30
-        }
+        "api/fetch-product.js": { "maxDuration": 15 },
+        "api/tasks.js": { "maxDuration": 60 },
+        "api/broadcast.js": { "maxDuration": 30 },
+        "api/dynamic-feeds.js": { "maxDuration": 30 }
     },
     "rewrites": [
         {
@@ -24,28 +16,19 @@
         {
             "source": "/api/(.*)",
             "headers": [
-                {
-                    "key": "Access-Control-Allow-Origin",
-                    "value": "*"
-                },
-                {
-                    "key": "Access-Control-Allow-Methods",
-                    "value": "GET, POST, OPTIONS"
-                },
-                {
-                    "key": "Access-Control-Allow-Headers",
-                    "value": "Content-Type, Authorization"
-                }
+                { "key": "Access-Control-Allow-Origin", "value": "*" },
+                { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+                { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
             ]
         }
     ],
     "crons": [
         {
-            "path": "/api/ai-blog-helper.js?action=automate-full-blog",
+            "path": "/api/tasks.js?task=blog-bot&action=automate-full-blog",
             "schedule": "0 10 * * *"
         },
         {
-            "path": "/api/ai-blog-helper.js?action=automate-trending-blog",
+            "path": "/api/tasks.js?task=blog-bot&action=automate-trending-blog",
             "schedule": "0 22 * * *"
         },
         {

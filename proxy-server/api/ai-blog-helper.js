@@ -60,7 +60,7 @@ function toFirestore(data) {
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GEMINI_API_KEY = 'AIzaSyD7kWC8z8q77xLiyP49GiZJohqh-MuIXfE';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 const FUTURE_YEAR = new Date().getFullYear() + (new Date().getMonth() > 9 ? 1 : 0); // Always target current or next year
 
 async function callGemini(prompt) {
@@ -228,32 +228,27 @@ export default async function handler(req, res) {
 
             let contentPrompt = "";
             if (activeType === 'product') {
-                const wordMin = isAutoPilot ? 2000 : 1500;
-                const wordMax = isAutoPilot ? 2500 : 2000;
-                contentPrompt = `Acting as an Expert Affiliate Reviewer, write a ${wordMin}-${wordMax} word guide.
-                - MUST include: Top 5 products, 300-word Deep Features analysis per product, and a list of 5-8 strong Pros (reasons to buy).
-                - CRITICAL: DO NOT include Cons or Disadvantages. Focus 100% on positive features and value.
-                - CRITICAL: DO NOT include the numbered list of products in the "content" HTML field. The product list will be automatically rendered from the "products" array. Your "content" should focus on the analysis, comparison, and expert tips ONLY.
-                - Internal Linking: ${productContext || 'Add 2-3 spots mentioning "Read more about our product guides...".'}
-                RETURN ONLY JSON: { "title": "...", "intro": "...", "content": "HTML_STRING", "category": "Reviews", "seoTitle": "...", "seoDescription": "...", "tags": ["tag1",...], "products": [{"name": "...", "price": "...", "description": "...", "pros": [], "productLink": "https://..."}] }. Start immediately with {`;
+                contentPrompt = `Acting as a Senior Tech Authority for SmartChoose.in, write a 2000-2500 word ULTIMATE BUYER'S GUIDE for: "${chosenTopic}".
+                - TARGET AUDIENCE: Budget-conscious Indian consumers. Use Rupee (₹) symbols.
+                - STRUCTURE: 
+                  1. Catchy Intro (300 words)
+                  2. "Why This Matters Now" (200 words)
+                  3. Deep Specs Breakdown & Comparison (800 words)
+                  4. Expert Verdict (200 words)
+                - CRITICAL: DO NOT include the numbered list of products in the "content" HTML field. 
+                - Internal Linking: ${productContext || 'Mention "Check our best mobile deals..." naturally.'}
+                RETURN ONLY JSON: { "title": "...", "intro": "...", "content": "HTML_STRING", "category": "Reviews", "seoTitle": "...", "seoDescription": "...", "tags": ["tag1",...], "products": [{"name": "...", "price": "₹...", "description": "...", "pros": ["Pro 1", "Pro 2"], "productLink": "https://..."}] }`;
             } else if (activeType === 'deals') {
-                contentPrompt = `Acting as a Deal Hunter, write a 1000-1500 word deal alert.
-                - CRITICAL: DO NOT include the product list in the "content" HTML field. It will be rendered from the "products" array separately.
-                - Internal Linking: ${productContext || 'Add 2-3 spots mentioning "Read more about our product guides...".'}
-                RETURN ONLY JSON: { "title": "...", "intro": "...", "content": "HTML_STRING", "category": "Deals", "seoTitle": "...", "seoDescription": "...", "tags": ["tag1",...], "products": [{"name": "...", "price": "...", "description": "...", "pros": [], "productLink": "https://..."}] }. Start immediately with {`;
+                contentPrompt = `Acting as a Rapid Deal Hunter, write a 1200-1500 word URGENT DEAL ALERT for: "${chosenTopic}".
+                - TONE: High urgency, scarcity, and value-focused.
+                - CRITICAL: DO NOT include the product list in the "content" HTML field.
+                RETURN ONLY JSON: { "title": "...", "intro": "...", "content": "HTML_STRING", "category": "Deals", "seoTitle": "...", "seoDescription": "...", "tags": ["tag1",...], "products": [{"name": "...", "price": "₹...", "description": "...", "pros": [], "productLink": "https://..."}] }`;
             } else {
-                const wordMin = isAutoPilot ? 1800 : 1200;
-                const wordMax = isAutoPilot ? 2200 : 1800;
-                contentPrompt = `Acting as a Senior Editorial Journalist, write a ${wordMin}-${wordMax} word VIRAL INFORMATIONAL GUIDE for: "${chosenTopic}". 
-                RULES: 
-                - Tone: Practical, high search volume, easy to rank.
-                - Structure: Detailed Pro-Tips, Deep Specs Analysis, and 8+ Practical Hack Bulletins.
-                - Mega FAQ: Include at least 8 frequently asked questions.
-                - READABILITY: Use Grade 6-8 Simple English. Short sentences.
-                - SEO: Use keyword-rich headings (H1, H2, H3), bullet points, and mobile-friendly simple English.
-                - Internal Linking: ${productContext || 'Add 2-3 spots mentioning "Read more about our product guides...".'}
-                - SEO FOCUS: Return a list of 5-10 specific long-tail SEO keywords used in the article.
-                RETURN ONLY JSON: { "title": "...", "intro": "...", "content": "HTML_STRING", "category": "Guides", "seoTitle": "...", "seoDescription": "...", "tags": ["tag1",...], "keywords": ["...",...], "products": [{"name": "...", "price": "...", "description": "...", "pros": [], "productLink": "REAL_INDIA_SHOP_URL"}] }. Start immediately with {`;
+                contentPrompt = `Acting as a Senior Editorial Journalist, write a 1800-2200 word COMPREHENSIVE GUIDE for: "${chosenTopic}". 
+                - CONTENT: Deep-dive Pro-Tips, 10+ Practical Hacks, and a Mega FAQ section (8+ questions).
+                - READABILITY: Grade 8 English.
+                - SEO: Use H1, H2, H3 tags and keyword-rich headers.
+                RETURN ONLY JSON: { "title": "...", "intro": "...", "content": "HTML_STRING", "category": "Guides", "seoTitle": "...", "seoDescription": "...", "tags": ["tag1",...], "keywords": ["keyword1",...] }`;
             }
 
             let result = await callAI(contentPrompt);

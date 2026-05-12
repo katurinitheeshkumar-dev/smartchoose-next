@@ -15,6 +15,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: 'Price sync task triggered' });
     } else if (task === 'job-hunter') {
       return res.status(200).json({ message: 'Job hunter task triggered' });
+    } else if (task === 'blog-bot') {
+      const blogHelper = await import('./ai-blog-helper.js');
+      return await blogHelper.default(req, res);
     }
     
     return res.status(400).json({ error: 'Unknown task' });
