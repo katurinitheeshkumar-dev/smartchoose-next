@@ -14,6 +14,12 @@
             "maxDuration": 30
         }
     },
+    "rewrites": [
+        {
+            "source": "/api/cron/:path*",
+            "destination": "/api/_cron/:path*"
+        }
+    ],
     "headers": [
         {
             "source": "/api/(.*)",

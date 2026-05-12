@@ -186,6 +186,7 @@ export interface DatabaseContextType {
   fetchInquiries: () => Promise<Inquiry[]>;
   updateInquiryStatus: (id: string, status: Inquiry['status']) => Promise<void>;
   deleteInquiry: (id: string) => Promise<void>;
+  requestInstantIndexing: (url: string) => Promise<boolean>;
 }
 
 // Blog Types

@@ -65,7 +65,7 @@ const initialFormData: ProductFormData = {
 };
 
 export function AdminProducts() {
-  const { fetchAdminProducts, addProduct, updateProduct, deleteProduct, getProductUrl, broadcastProduct, siteStats } = useDatabase();
+  const { fetchAdminProducts, addProduct, updateProduct, deleteProduct, getProductUrl, broadcastProduct, requestInstantIndexing, siteStats } = useDatabase();
   const searchParams = useSearchParams();
   const router = useRouter();
   const filterStatus = searchParams.get('filter') || 'all';
@@ -195,6 +195,8 @@ export function AdminProducts() {
       if (newId) {
         successCount++;
         syncedProducts.push({ ...finalData, id: newId });
+        // Trigger instant indexing for each synced product
+        requestInstantIndexing(`https://smartchoose.in/product/${newId}`);
       }
     }
 
@@ -594,11 +596,15 @@ export function AdminProducts() {
       let productId = editingProduct?.id;
       if (editingProduct) {
         await updateProduct(editingProduct.id, finalData);
+        if (finalData.published) {
+          requestInstantIndexing(`https://smartchoose.in/product/${editingProduct.id}`);
+        }
       } else {
         productId = await addProduct(finalData);
         if (finalData.published && productId) {
           setToast({ show: true, message: 'Product created! Broadcasting alerts...', type: 'info' });
           broadcastProduct(productId);
+          requestInstantIndexing(`https://smartchoose.in/product/${productId}`);
         }
       }
       

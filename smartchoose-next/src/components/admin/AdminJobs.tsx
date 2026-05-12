@@ -28,7 +28,7 @@ const PROXY_URL = 'https://smartchoose-proxy.vercel.app';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 export function AdminJobs() {
-  const { fetchAdminJobs, addJob, updateJob, deleteJob, broadcastJob, siteStats } = useDatabase();
+  const { fetchAdminJobs, addJob, updateJob, deleteJob, broadcastJob, requestInstantIndexing, siteStats } = useDatabase();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -122,11 +122,17 @@ export function AdminJobs() {
     try {
       if (editingJob) {
         await updateJob(editingJob.id, formData);
+        if (formData.status === 'active') {
+          requestInstantIndexing(`https://smartchoose.in/jobs/${editingJob.id}`);
+        }
         setToast({ show: true, message: 'Job updated!', type: 'success' });
       } else {
         const id = await addJob(formData);
+        if (formData.status === 'active') {
+          broadcastJob(id);
+          requestInstantIndexing(`https://smartchoose.in/jobs/${id}`);
+        }
         setToast({ show: true, message: 'Job posted!', type: 'success' });
-        if (formData.status === 'active') handleBroadcast(id);
       }
       setShowEditor(false); setEditingJob(null); setFormData(initialForm); loadJobs(currentPage);
     } catch (error) {

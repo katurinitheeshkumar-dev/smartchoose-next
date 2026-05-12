@@ -1,11 +1,11 @@
+// SmartChoose Extension Popup v3.0
+let scrapedData = [];
+
 // Load saved Tag
 const tagInput = document.getElementById('amazonTag');
 chrome.storage.local.get(['amazonTag'], (res) => {
-  if (res.amazonTag) {
-    tagInput.value = res.amazonTag;
-  } else {
-    // Default tag from user
-    tagInput.value = 'smartthingste-21';
+  tagInput.value = res.amazonTag || 'smartthingste-21';
+  if (!res.amazonTag) {
     chrome.storage.local.set({ amazonTag: 'smartthingste-21' });
   }
 });
@@ -15,76 +15,105 @@ tagInput.addEventListener('input', (e) => {
   chrome.storage.local.set({ amazonTag: e.target.value });
 });
 
+// ── Extract Button ────────────────────────────────────────────────────────────
 document.getElementById('extractBtn').addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  if (!tab.url.includes("amazon.in") && !tab.url.includes("flipkart.com")) {
-    document.getElementById('status').innerText = "❌ Please go to an Amazon or Flipkart page first!";
+
+  const isAmazon = tab.url.includes('amazon.in');
+  const isFlipkart = tab.url.includes('flipkart.com');
+
+  if (!isAmazon && !isFlipkart) {
+    setStatus('❌ Please open an Amazon.in or Flipkart.com page first!', 'error');
     return;
   }
 
-  document.getElementById('status').innerHTML = "⏳ <b>Deep Extracting 100% Full Data...</b><br/><small>Please wait 5-10 seconds for background fetch.</small>";
+  setStatus('⏳ <b>Deep Extracting up to 20 Products...</b><br><small>Fetching full details, images & descriptions. Wait 30–60 sec.</small>', 'info');
   document.getElementById('extractBtn').disabled = true;
 
   const tag = tagInput.value.trim();
   const manualAff = document.getElementById('manualAffiliate').value.trim();
 
-  chrome.scripting.executeScript({
+  // Step 1: inject global variables
+  await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: (amazonTag, manualLink) => {
-      // Set global variables for scraper.js to pick up
       window.SMARTCHOOSE_AMAZON_TAG = amazonTag;
       window.SMARTCHOOSE_MANUAL_LINK = manualLink;
     },
     args: [tag, manualAff]
-  }, () => {
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['scraper.js']
-    }, (results) => {
-      if (chrome.runtime.lastError || !results || !results[0].result) {
-        document.getElementById('status').innerText = "❌ Error extracting data.";
-        document.getElementById('extractBtn').disabled = false;
-        return;
-      }
+  });
 
-      scrapedData = results[0].result;
-      
-      if (scrapedData.length === 0) {
-        document.getElementById('status').innerText = "⚠️ No products found. Scroll down and try again.";
-        document.getElementById('extractBtn').disabled = false;
-        return;
-      }
+  // Step 2: run scraper
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    files: ['scraper.js']
+  }, (results) => {
+    if (chrome.runtime.lastError) {
+      console.error(chrome.runtime.lastError);
+      setStatus('❌ Extension error: ' + chrome.runtime.lastError.message, 'error');
+      document.getElementById('extractBtn').disabled = false;
+      return;
+    }
 
-      document.getElementById('status').innerHTML = `✅ Found <b>${scrapedData.length}</b> products!`;
-      document.getElementById('extractBtn').style.display = 'none';
-      document.getElementById('sendBtn').style.display = 'block';
+    if (!results || !results[0] || results[0].result == null) {
+      setStatus('❌ Could not read the page. Try refreshing and try again.', 'error');
+      document.getElementById('extractBtn').disabled = false;
+      return;
+    }
 
-      const ul = document.getElementById('productList');
-      ul.innerHTML = '';
-      scrapedData.forEach(p => {
-        const li = document.createElement('li');
-        li.innerText = p.title;
-        ul.appendChild(li);
-      });
+    scrapedData = results[0].result;
+
+    if (!Array.isArray(scrapedData) || scrapedData.length === 0) {
+      setStatus('⚠️ No products found on this page.<br><small>Try scrolling down to load more products, then click Extract again.</small>', 'warn');
+      document.getElementById('extractBtn').disabled = false;
+      return;
+    }
+
+    setStatus(`✅ Found <b>${scrapedData.length}</b> product${scrapedData.length > 1 ? 's' : ''}!`, 'success');
+    document.getElementById('extractBtn').style.display = 'none';
+    document.getElementById('sendBtn').style.display = 'block';
+
+    // Show product list preview
+    const ul = document.getElementById('productList');
+    ul.innerHTML = '';
+    scrapedData.slice(0, 15).forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span style="color:#10b981;font-weight:bold;">${p.price || '—'}</span> ${p.title}`;
+      ul.appendChild(li);
     });
   });
 });
 
+// ── Send Button ───────────────────────────────────────────────────────────────
 document.getElementById('sendBtn').addEventListener('click', () => {
-  if (scrapedData.length === 0) return;
-  
-  // 100% Foolproof method: Copy to clipboard
+  if (!scrapedData || scrapedData.length === 0) return;
+
   const dataString = JSON.stringify(scrapedData);
   navigator.clipboard.writeText(dataString).then(() => {
-    document.getElementById('status').innerHTML = "✅ Copied! Now click <b>Paste Extension Data</b> in Admin Panel.";
-    document.getElementById('sendBtn').innerText = "Open Admin Panel";
-    
-    // Change button behavior to just open the panel next click
+    setStatus(
+      `✅ <b>${scrapedData.length} products copied!</b><br>` +
+      `<small>Now click <b>"Paste Extension Data"</b> in the Admin Panel.</small>`,
+      'success'
+    );
+    document.getElementById('sendBtn').innerText = '🚀 Open Admin Panel';
     document.getElementById('sendBtn').onclick = () => {
-      chrome.tabs.create({ url: "https://smartchoose.in/admin/products" });
+      chrome.tabs.create({ url: 'https://smartchoose.in/admin/products' });
     };
-  }).catch(e => {
-    document.getElementById('status').innerText = "❌ Failed to copy to clipboard.";
+  }).catch(() => {
+    // Fallback: try manual copy
+    const ta = document.createElement('textarea');
+    ta.value = dataString;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    setStatus('✅ Copied! Click <b>Paste Extension Data</b> in Admin Panel.', 'success');
   });
 });
+
+// ── Helper ────────────────────────────────────────────────────────────────────
+function setStatus(html, type) {
+  const el = document.getElementById('status');
+  el.innerHTML = html;
+  el.className = 'status status-' + type;
+}

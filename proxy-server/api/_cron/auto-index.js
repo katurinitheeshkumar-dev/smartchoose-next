@@ -128,6 +128,14 @@ export default async function handler(req, res) {
     
     const jobUrls = jobsSnap.docs.map(d => `${SITE_URL}/jobs/${d.id}`);
 
+    // 2b. Get all published blog URLs from Firestore
+    const blogsSnap = await db.collection('blogPosts')
+      .where('status', '==', 'published')
+      .select('slug')
+      .get();
+    
+    const blogUrls = blogsSnap.docs.map(d => `${SITE_URL}/blog/${d.data().slug}`);
+
     // 3. Static URLs
     const staticUrls = [
       `${SITE_URL}/`,
@@ -138,10 +146,29 @@ export default async function handler(req, res) {
       `${SITE_URL}/contact`,
     ];
 
-    const allUrls = [...staticUrls, ...productUrls, ...jobUrls];
-    const priorityUrls = [...productUrls, ...jobUrls]; // Google Indexing API for these
+    // --- HANDLE SINGLE URL INDEXING (INSTANT MODE) ---
+    const targetUrl = req.body?.url;
+    if (targetUrl) {
+      console.log(`⚡ Instant indexing requested for: ${targetUrl}`);
+      const [indexNowRes, googleClient] = await Promise.all([
+        submitIndexNow([targetUrl]),
+        getGoogleAuthClient()
+      ]);
+      const googleRes = await submitToGoogleIndexing([targetUrl], googleClient);
+      
+      return res.status(200).json({ 
+        success: true, 
+        mode: 'instant',
+        url: targetUrl,
+        indexNow: indexNowRes > 0,
+        google: googleRes.success > 0
+      });
+    }
 
-    console.log(`📋 URLs: ${productUrls.length} products, ${jobUrls.length} jobs, ${staticUrls.length} static`);
+    const allUrls = [...staticUrls, ...productUrls, ...jobUrls, ...blogUrls];
+    const priorityUrls = [...productUrls, ...jobUrls, ...blogUrls]; // Google Indexing API for these
+
+    console.log(`📋 URLs: ${productUrls.length} products, ${jobUrls.length} jobs, ${blogUrls.length} blogs, ${staticUrls.length} static`);
 
     // 4. Run indexing in parallel
     const [sitemapPings, indexNowCount, googleClient] = await Promise.all([
@@ -151,6 +178,7 @@ export default async function handler(req, res) {
     ]);
 
     // 5. Google Indexing API (rate-limited)
+    // We take the latest 200 URLs to stay within quota
     const googleResult = await submitToGoogleIndexing(priorityUrls.slice(0, 200), googleClient);
 
     const duration = Math.round((Date.now() - startTime) / 1000);

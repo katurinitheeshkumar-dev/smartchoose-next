@@ -812,6 +812,24 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const requestInstantIndexing = useCallback(async (url: string): Promise<boolean> => {
+    try {
+      console.log('⚡ Triggering instant indexing for:', url);
+      const response = await fetch('https://smartchoose-proxy.vercel.app/api/cron/auto-index.js', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-trigger': 'true' 
+        },
+        body: JSON.stringify({ url }),
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Instant indexing trigger error:', error);
+      return false;
+    }
+  }, []);
+
   // ---- INBOX MANAGEMENT ----
   const addInquiry = useCallback(async (inquiry: Omit<Inquiry, 'id' | 'status' | 'createdAt'>) => {
     const id = generateId('msg');
@@ -888,7 +906,8 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     fetchInquiries,
     updateInquiryStatus,
     deleteInquiry,
-  }), [settings, products, socialLinks, analytics, siteStats, isInitialLoading, updateSettings, addProduct, updateProduct, deleteProduct, duplicateProduct, recordClick, recordView, addSocialLink, updateSocialLink, deleteSocialLink, getProductUrl, getProductById, getPlatformFromUrl, fetchAdminProducts, fetchAdminBlogs, fetchAdminJobs, blogPosts, addBlog, updateBlog, deleteBlog, getBlogBySlug, jobs, isJobsLoading, addJob, updateJob, deleteJob, broadcastJob, recordJobApply, recordJobView, broadcastProduct, broadcastBlog, addInquiry, fetchInquiries, updateInquiryStatus, deleteInquiry]);
+    requestInstantIndexing,
+  }), [settings, products, socialLinks, analytics, siteStats, isInitialLoading, updateSettings, addProduct, updateProduct, deleteProduct, duplicateProduct, recordClick, recordView, addSocialLink, updateSocialLink, deleteSocialLink, getProductUrl, getProductById, getPlatformFromUrl, fetchAdminProducts, fetchAdminBlogs, fetchAdminJobs, blogPosts, addBlog, updateBlog, deleteBlog, getBlogBySlug, jobs, isJobsLoading, addJob, updateJob, deleteJob, broadcastJob, recordJobApply, recordJobView, broadcastProduct, broadcastBlog, addInquiry, fetchInquiries, updateInquiryStatus, deleteInquiry, requestInstantIndexing]);
 
   return (
     <DatabaseContext.Provider value={value}>

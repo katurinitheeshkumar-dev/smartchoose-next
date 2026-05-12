@@ -1,442 +1,410 @@
-// Amazon & Flipkart DOM Scraper with High-Res Image Support & Deep Extraction
+// SmartChoose Deep Scraper v4.0
+// Chrome Extension content scripts have host_permissions => CORS is allowed!
+// Full deep extraction: fetches each product page for 100% data fidelity.
+
 (async function scrapePage() {
   const products = [];
-  const isAmazon = window.location.href.includes("amazon");
-  const amazonTag = window.SMARTCHOOSE_AMAZON_TAG || '';
+  const isAmazon  = window.location.href.includes('amazon');
+  const isFlipkart = window.location.href.includes('flipkart.com');
+  const amazonTag  = window.SMARTCHOOSE_AMAZON_TAG  || '';
   const manualLink = window.SMARTCHOOSE_MANUAL_LINK || '';
 
-  function getHighResImage(url, platform) {
-    if (!url || typeof url !== 'string') return url;
-    if (url.includes('transparent') || url.includes('base64')) return url;
-    try {
-      if (platform === 'Amazon') {
-        return url.replace(/\._[A-Z0-9,_]+_\./i, '.');
-      } 
-      if (platform === 'Flipkart') {
-        return url.replace(/\/image\/\d+\/\d+\//i, '/image/800/800/');
-      }
-    } catch (e) {
-      console.warn("Error cleaning image URL", e);
-    }
-    return url;
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+
+  // ── Image helpers ────────────────────────────────────────────────────────────
+  function cleanAmazonImg(url) {
+    if (!url || url.includes('base64') || url.includes('transparent')) return url;
+    return url.replace(/\._[A-Z0-9,_]+_\./i, '._AC_SL1500_.');
+  }
+  function cleanFlipkartImg(url) {
+    if (!url) return url;
+    return url.replace(/\/image\/\d+\/\d+\//i, '/image/832/832/').replace(/\/image\/\d+\//i, '/image/832/');
   }
 
+  function extractPrice(text) {
+    if (!text) return '';
+    const n = (text + '').replace(/[^\d]/g, '');
+    return n ? `₹${parseInt(n).toLocaleString('en-IN')}` : '';
+  }
+
+  function makeAffLink(asin, href) {
+    let base = asin ? `https://www.amazon.in/dp/${asin}` : (href || '').split('?')[0].split('/ref=')[0];
+    if (!base) return '';
+    if (amazonTag && base.includes('amazon.in')) base += (base.includes('?') ? '&' : '?') + `tag=${amazonTag}`;
+    return base;
+  }
+
+  function guessCategory() {
+    const s = (window.location.href + ' ' + document.title).toLowerCase();
+    if (/mobile|smartphone/.test(s)) return 'Smartphones';
+    if (/laptop|notebook/.test(s)) return 'Laptops';
+    if (/earbuds|earphone|headphone|audio/.test(s)) return 'Audio';
+    if (/watch|wearable/.test(s)) return 'Wearables';
+    if (/tablet|ipad/.test(s)) return 'Tablets';
+    if (/camera/.test(s)) return 'Cameras';
+    if (/\btv\b|television|monitor/.test(s)) return 'TVs & Displays';
+    if (/gaming/.test(s)) return 'Gaming & Accessories';
+    if (/fashion|clothing|shirt|dress/.test(s)) return 'Fashion';
+    if (/beauty|cosmetic|skincare/.test(s)) return 'Beauty';
+    if (/kitchen|home appliance/.test(s)) return 'Home Appliances';
+    return 'Electronics';
+  }
+
+  // ── Deep fetch an Amazon product page ────────────────────────────────────────
+  async function deepFetchAmazon(p) {
+    try {
+      await delay(900);
+      const res = await fetch(p.affiliateLink.split('?')[0], { credentials: 'omit' });
+      if (!res.ok) { p.invalid = true; return; }
+      const html = await res.text();
+
+      // Title — use textContent-safe regex
+      const titleMatch = html.match(/id="productTitle"[^>]*>\s*([\s\S]+?)\s*<\/span>/i);
+      if (titleMatch && titleMatch[1].trim().length > 5) {
+        p.fullTitle = titleMatch[1].replace(/<[^>]+>/g, '').trim();
+        p.title = p.fullTitle;
+      } else {
+        p.invalid = true; // CAPTCHA / blocked
+        return;
+      }
+
+      // Hi-res images from page JSON
+      const hiResMatches = [...html.matchAll(/"hiRes"\s*:\s*"(https:[^"]+)"/g)];
+      if (hiResMatches.length > 0) {
+        p.images = hiResMatches.map(m => m[1]).filter(u => !u.includes('base64')).slice(0, 12);
+        p.image  = p.images[0];
+      } else {
+        const largeMatches = [...html.matchAll(/"large"\s*:\s*"(https:[^"]+)"/g)];
+        if (largeMatches.length > 0) {
+          p.images = largeMatches.map(m => m[1]).filter(u => !u.includes('base64')).slice(0, 12);
+          p.image  = p.images[0];
+        }
+      }
+
+      // Bullet description — safe regex extraction
+      const bulletsMatch = html.match(/id="feature-bullets"[\s\S]+?<ul[^>]*>([\s\S]+?)<\/ul>/i);
+      if (bulletsMatch) {
+        const liMatches = [...bulletsMatch[1].matchAll(/<li[^>]*>\s*<span[^>]*>([\s\S]+?)<\/span>/gi)];
+        const blacklist = ['m.r.p', 'price:', 'you save', 'inclusive of', 'free delivery', 'sponsored'];
+        const lines = liMatches
+          .map(m => m[1].replace(/<[^>]+>/g, '').trim())
+          .filter(t => t.length > 15 && !blacklist.some(b => t.toLowerCase().includes(b)));
+        if (lines.length > 0) p.description = lines.slice(0, 10).join('\n\n');
+      }
+
+      // Brand
+      const brandMatch = html.match(/id="bylineInfo"[^>]*>\s*(?:Visit the\s+)?<[^>]+>([^<]+)<\/a>/i);
+      if (brandMatch) p.brand = brandMatch[1].trim();
+
+      p.needsEnrichment = false;
+    } catch (e) {
+      console.warn('SmartChoose: deep fetch failed for', p.affiliateLink, e);
+    }
+  }
+
+  // ── Deep fetch a Flipkart product page ───────────────────────────────────────
+  async function deepFetchFlipkart(p) {
+    try {
+      const res = await fetch(p.affiliateLink.split('?')[0], { credentials: 'omit' });
+      if (!res.ok) { p.invalid = true; return; }
+      const html = await res.text();
+
+      const ndMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]+?)<\/script>/i);
+      if (!ndMatch) { p.invalid = true; return; }
+
+      const nd = JSON.parse(ndMatch[1]);
+
+      // Try multiple possible paths
+      const pageData =
+        nd?.props?.pageProps?.initialData?.data?.getProductDetails?.productDetails ||
+        nd?.props?.pageProps?.initialData?.data?.productDetails ||
+        nd?.props?.pageProps?.RESPONSE?.data?.productDetails ||
+        nd?.props?.pageProps?.pageData ||
+        nd?.props?.pageProps;
+
+      if (!pageData) { p.invalid = true; return; }
+
+      const fkTitle =
+        pageData?.title ??
+        pageData?.primaryInfo?.title ??
+        pageData?.productName ??
+        pageData?.name ??
+        pageData?.productInfo?.value?.name;
+
+      if (fkTitle && fkTitle.length > 5) {
+        p.fullTitle = fkTitle;
+        p.title = fkTitle;
+      }
+
+      // Images
+      const imgs = pageData?.images ?? pageData?.media?.images ?? pageData?.imageUrls;
+      if (imgs && (Array.isArray(imgs) || typeof imgs === 'string')) {
+        const imgArr = Array.isArray(imgs) ? imgs : [imgs];
+        const fetched = imgArr
+          .map(i => cleanFlipkartImg(i?.url || i?.src || (typeof i === 'string' ? i : '')))
+          .filter(u => u && !u.includes('base64'))
+          .slice(0, 12);
+        if (fetched.length > 0) { p.images = fetched; p.image = fetched[0]; }
+      }
+
+      // Description / highlights
+      const hl = pageData?.highlights ?? pageData?.keyHighlights;
+      if (Array.isArray(hl) && hl.length > 0) {
+        p.description = hl.map(h => (typeof h === 'string' ? h : h?.text || h?.value || '')).filter(Boolean).join('\n\n');
+      }
+
+      p.needsEnrichment = false;
+    } catch (e) {
+      console.warn('SmartChoose: Flipkart deep fetch failed', e);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // AMAZON
+  // ════════════════════════════════════════════════════════════════════════════
   if (isAmazon) {
-    const cards = document.querySelectorAll('[data-component-type="s-search-result"], .p13n-sc-uncoverable-faceout, .vse-item, .sg-col-inner .s-card-container');
-    
-    cards.forEach(card => {
+    const isSingle = !!document.querySelector('#productTitle');
+
+    if (isSingle) {
+      // ── Single Amazon product page ──────────────────────────────────────────
       try {
-        const titleEl = card.querySelector('[data-cy="title-recipe"] h2 a span, h2 a span, .a-size-medium.a-color-base.a-text-normal, .a-size-base-plus.a-color-base.a-text-normal');
-        let title = titleEl ? titleEl.innerText.trim() : '';
+        const title = (document.querySelector('#productTitle')?.textContent || '').trim();
+        if (!title) return products;
 
-        const priceEl = card.querySelector('.a-price .a-offscreen, .a-price-whole, .p13n-sc-price');
-        let priceValue = '';
-        if (priceEl) {
-          const rawText = priceEl.innerText || priceEl.textContent;
-          priceValue = rawText.replace(/[^\d.]/g, '').split('.')[0]; 
-        }
-        let price = priceValue ? `₹${parseInt(priceValue).toLocaleString('en-IN')}` : '';
-
-        const origPriceEl = card.querySelector('.a-text-price .a-offscreen, .a-text-strike, .a-price.a-text-price span');
-        let origPriceValue = '';
-        if (origPriceEl) {
-          const rawText = origPriceEl.innerText || origPriceEl.textContent;
-          origPriceValue = rawText.replace(/[^\d.]/g, '').split('.')[0];
-        }
-        let originalPrice = origPriceValue && origPriceValue !== priceValue ? `₹${parseInt(origPriceValue).toLocaleString('en-IN')}` : '';
-
-        const imgEl = card.querySelector('img.s-image, img.p13n-product-image, img');
-        let image = imgEl ? imgEl.src : '';
-
-        let asin = card.getAttribute('data-asin') || '';
-        let linkEl = card.querySelector('.a-link-normal[href*="/dp/"], .a-link-normal[href*="/gp/product/"], a[href*="/dp/"]');
-        
-        if (!asin && linkEl) {
-          const match = linkEl.href.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
-          if (match) asin = match[1];
-        }
-        
-        let affiliateLink = '';
-        if (asin) {
-          affiliateLink = `https://www.amazon.in/dp/${asin}`;
-        } else if (linkEl && linkEl.href) {
-          affiliateLink = linkEl.href.split('?')[0].split('/ref=')[0];
-        } else {
-          affiliateLink = `https://www.amazon.in/s?k=${encodeURIComponent(title)}`;
+        const priceSelectors = [
+          '.priceToPay .a-offscreen', '.priceToPay .a-price-whole',
+          '#apex_desktop .a-price .a-offscreen',
+          '#corePriceDisplay_desktop_feature_div .a-price .a-offscreen',
+          '.a-price[data-a-color="price"] .a-offscreen',
+          '.a-price .a-offscreen', '#priceblock_ourprice', '#priceblock_dealprice',
+          '.a-price-whole'
+        ];
+        let price = '';
+        for (const sel of priceSelectors) {
+          const t = document.querySelector(sel)?.textContent;
+          if (t) { price = extractPrice(t); if (price) break; }
         }
 
-        if (amazonTag && affiliateLink.includes('amazon.in')) {
-          const separator = affiliateLink.includes('?') ? '&' : '?';
-          affiliateLink += `${separator}tag=${amazonTag}`;
+        const origEl = document.querySelector('.basisPrice .a-offscreen,.a-price.a-text-price .a-offscreen,#listPrice');
+        const originalPrice = origEl ? extractPrice(origEl.textContent) : '';
+
+        let asin = document.querySelector('#ASIN,input[name="ASIN"]')?.value || '';
+        if (!asin) { const m = location.href.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i); if (m) asin = m[1]; }
+
+        // Images from page script JSON (most reliable)
+        let images = [];
+        for (const sc of document.querySelectorAll('script:not([src])')) {
+          const hits = [...(sc.textContent || '').matchAll(/"hiRes"\s*:\s*"(https:[^"]+)"/g)];
+          if (hits.length > 0) { images = hits.map(m => m[1]).filter(u => !u.includes('base64')).slice(0, 12); break; }
         }
-
-        image = getHighResImage(image, 'Amazon');
-        if (asin && (!image || image.includes('base64') || image.includes('transparent'))) {
-          image = `https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg`;
+        if (!images.length) {
+          document.querySelectorAll('#altImages li img,.imageThumbnail img').forEach(img => {
+            const hi = cleanAmazonImg(img.src);
+            if (hi && !hi.includes('base64') && !hi.includes('transparent') && !hi.includes('video')) images.push(hi);
+          });
         }
+        const mainImg = document.querySelector('#landingImage,#imgBlkFront');
+        if (!images.length && mainImg) images = [cleanAmazonImg(mainImg.src)];
 
-        title = title.trim();
+        // Bullets
+        const blacklist = ['m.r.p', 'price:', 'you save', 'inclusive of', 'free delivery', 'sponsored', 'ships from', 'sold by'];
+        let description = '';
+        const bullets = Array.from(document.querySelectorAll('#feature-bullets .a-list-item,#featurebullets_feature_div .a-list-item'))
+          .map(el => el.textContent.trim())
+          .filter(t => t.length > 15 && !blacklist.some(b => t.toLowerCase().includes(b)));
+        if (bullets.length) description = bullets.slice(0, 10).join('\n\n');
+        if (!description) description = document.querySelector('#productDescription p')?.textContent.trim() || '';
 
-        const descEl = card.querySelector('.a-size-base.a-color-secondary.s-line-clamp-2, .a-section .a-spacing-none .a-color-secondary');
-        let description = descEl ? descEl.innerText.trim() : '';
-        if (description.toLowerCase().includes('sponsored')) description = '';
+        const brand = (document.querySelector('#bylineInfo')?.textContent || '').replace(/Visit the|Brand:/gi, '').trim() || 'Amazon';
 
-        let category = 'Electronics';
-        const urlLower = window.location.href.toLowerCase();
-        if (urlLower.includes('fashion') || urlLower.includes('clothing') || urlLower.includes('shirt')) category = 'Fashion';
-        else if (urlLower.includes('beauty') || urlLower.includes('makeup')) category = 'Beauty';
-        else if (urlLower.includes('home') || urlLower.includes('kitchen')) category = 'Home & Kitchen';
-        else if (urlLower.includes('watch')) category = 'Watches';
+        // Affiliate link — SiteStripe first
+        let affiliateLink = location.href.split('?')[0].split('/ref=')[0];
+        const ss = document.querySelector('#amzn-ss-text-shortlink-textarea,#amzn-ss-text-full-link-textarea');
+        if (ss?.value?.includes('amzn')) affiliateLink = ss.value.trim();
+        else affiliateLink = makeAffLink(asin, affiliateLink);
 
-        if (title && title.length > 5 && affiliateLink) {
+        products.push({
+          title, fullTitle: title,
+          url: affiliateLink, affiliateLink,
+          image: images[0] || (asin ? `https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg` : ''),
+          images: images.length ? images : (asin ? [`https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg`] : []),
+          price, originalPrice, description, brand,
+          platform: 'Amazon', category: guessCategory(), needsEnrichment: false
+        });
+      } catch (e) { console.error('Amazon single page error', e); }
+
+    } else {
+      // ── Amazon search/listing page — bulk scrape + deep fetch ───────────────
+      const cards = Array.from(document.querySelectorAll(
+        '[data-component-type="s-search-result"][data-asin],' +
+        '.s-result-item[data-asin]:not([data-asin=""])'
+      )).filter(c => c.getAttribute('data-asin'));
+
+      const category = guessCategory();
+
+      for (const card of cards) {
+        try {
+          const titleEl = card.querySelector(
+            '[data-cy="title-recipe"] h2 a span,h2.a-size-mini a span,' +
+            'h2 a span.a-text-normal,.a-size-medium.a-color-base.a-text-normal,' +
+            '.a-size-base-plus.a-color-base.a-text-normal,h2 a span'
+          );
+          const title = (titleEl?.textContent || '').trim();
+          if (!title || title.length < 5) continue;
+
+          const asin = card.getAttribute('data-asin') || '';
+          const priceEl = card.querySelector('.a-price .a-offscreen,.a-price-whole,.p13n-sc-price');
+          const price = priceEl ? extractPrice(priceEl.textContent) : '';
+          const origEl = card.querySelector('.a-text-price .a-offscreen,.a-price.a-text-price .a-offscreen');
+          const originalPrice = origEl ? extractPrice(origEl.textContent) : '';
+
+          // Images
+          const imgs = [];
+          card.querySelectorAll('img').forEach(img => {
+            const hi = cleanAmazonImg(img.src || img.getAttribute('data-src') || '');
+            if (hi && hi.includes('amazon') && !hi.includes('base64') && !imgs.includes(hi)) imgs.push(hi);
+          });
+          let image = imgs[0] || (asin ? `https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg` : '');
+          const images = imgs.length ? imgs : (asin ? [image] : []);
+
+          const linkEl = card.querySelector('a.a-link-normal[href*="/dp/"],a[href*="/dp/"],a[href*="/gp/product/"]');
+          const affiliateLink = makeAffLink(asin, linkEl?.href || '');
+          if (!affiliateLink) continue;
+
+          const descEl = card.querySelector('.a-size-base.a-color-secondary,.a-row .a-size-base-plus.a-color-base');
+          let description = (descEl?.textContent || '').trim();
+          if (description.toLowerCase().includes('sponsored')) description = '';
+
           products.push({
-            title,
-            fullTitle: title,
-            image: image || 'generic.svg',
-            price,
-            originalPrice,
+            title, fullTitle: title,
+            url: affiliateLink, affiliateLink,
+            image, images, price, originalPrice,
             description: description || title,
-            brand: 'Amazon',
-            platform: 'Amazon',
-            affiliateLink,
-            category,
+            brand: 'Amazon', platform: 'Amazon', category,
             needsEnrichment: true
           });
-        }
-      } catch (e) {}
-    });
-
-    if (products.length > 0) {
-      // Deep Extraction for Amazon Bulk
-      const maxDeep = 10;
-      products.length = Math.min(products.length, maxDeep);
-      const delay = ms => new Promise(res => setTimeout(res, ms));
-      for (const p of products) {
-        if (p.affiliateLink) {
-          try {
-            await delay(800); // Prevent Amazon rate-limiting (Robot Check)
-            const res = await fetch(p.affiliateLink);
-            const html = await res.text();
-            
-            // Use DOMParser for safer and accurate extraction
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
-            
-            // Extract Full Title securely
-            const titleEl = doc.querySelector('#productTitle');
-            if (titleEl && titleEl.innerText.trim().length > 5) {
-                p.fullTitle = titleEl.innerText.trim();
-                p.title = p.fullTitle;
-            } else {
-                p.invalid = true; // Failed to fetch actual product page (captcha or block)
-                continue;
-            }
-
-            // Extract Images (Regex is still best for this as hiRes is stored in JS objects)
-            let fetchedImages = [];
-            const imgMatches = [...html.matchAll(/"hiRes"\s*:\s*"([^"]+)"/g)];
-            if (imgMatches.length > 0) {
-                fetchedImages = imgMatches.map(m => m[1]).slice(0, 12);
-            } else {
-                const largeMatches = [...html.matchAll(/"large"\s*:\s*"([^"]+)"/g)];
-                if (largeMatches.length > 0) fetchedImages = largeMatches.map(m => m[1]).slice(0, 12);
-            }
-            if (fetchedImages.length > 0) {
-                p.images = fetchedImages;
-                p.image = fetchedImages[0];
-            }
-
-            // Extract Bullets securely using DOMParser to avoid matching irrelevant specs
-            const bulletEls = doc.querySelectorAll('#feature-bullets .a-list-item');
-            const bullets = Array.from(bulletEls)
-                .map(el => el.innerText.trim())
-                .filter(t => t.length > 15 && !t.toLowerCase().includes('sponsored'));
-            if (bullets.length > 0) {
-                p.description = bullets.slice(0, 10).join('\n\n');
-            }
-            
-            p.needsEnrichment = false;
-          } catch(e) {}
-        }
-      }
-    } else {
-      // Support for single product page
-      try {
-        const titleEl = document.querySelector('#productTitle');
-        const priceEl = document.querySelector('.a-price .a-offscreen, #priceblock_ourprice, #priceblock_dealprice, .a-price-whole');
-        const imgEl = document.querySelector('#landingImage, #imgBlkFront');
-        
-        if (titleEl && (priceEl || imgEl)) {
-          let title = titleEl.innerText.trim();
-
-          let priceValue = '';
-          const priceSelectors = [
-            '.a-price[data-a-color="price"] .a-offscreen',
-            '.a-price .a-offscreen',
-            '.a-price-whole',
-            '#priceblock_ourprice',
-            '#priceblock_dealprice',
-            '#corePrice_feature_div .a-price .a-offscreen',
-            '.priceToPay .a-price .a-offscreen',
-            '#apex_desktop .a-price .a-offscreen'
-          ];
-          for (const sel of priceSelectors) {
-            const el = document.querySelector(sel);
-            if (el) {
-              const raw = (el.innerText || el.textContent).replace(/[^\d.]/g, '').split('.')[0];
-              if (raw && parseInt(raw) > 0) { priceValue = raw; break; }
-            }
-          }
-          let price = priceValue ? `\u20b9${parseInt(priceValue).toLocaleString('en-IN')}` : '';
-          let image = imgEl ? imgEl.src : '';
-          
-          const origPriceEl = document.querySelector('.a-price.a-text-price .a-offscreen, .basisPrice .a-offscreen, #listPrice');
-          let origPriceValue = origPriceEl ? (origPriceEl.innerText || origPriceEl.textContent).replace(/[^\d.]/g, '').split('.')[0] : '';
-          let originalPrice = origPriceValue && origPriceValue !== priceValue ? `\u20b9${parseInt(origPriceValue).toLocaleString('en-IN')}` : '';
-
-          let description = '';
-          const bulletSelectors = [
-            '#feature-bullets .a-list-item',
-            '#featurebullets_feature_div .a-list-item',
-            '#productDescription p',
-            '#productDescription',
-            '.aplus-v2 .aplus-standard',
-            '#bookDescription_feature_div',
-            '#item_details_description'
-          ];
-          
-          const blacklist = ['m.r.p', 'price:', 'you save', 'inclusive of', 'free delivery', 'in stock', 'sponsored', 'select delivery', 'ships from', 'sold by', 'checkout', 'add to cart', 'buy now', 'eligible for', 'return policy', 'customer reviews'];
-
-          for (const sel of bulletSelectors) {
-            const els = document.querySelectorAll(sel);
-            if (els.length > 0) {
-              const lines = Array.from(els)
-                .map(el => el.innerText.trim())
-                .filter(t => {
-                  const tl = t.toLowerCase();
-                  return t.length > 20 && !blacklist.some(b => tl.includes(b));
-                })
-                .slice(0, 15);
-              
-              if (lines.length > 0) {
-                description = lines.join('\n\n');
-                if (description.length > 250) break;
-              }
-            }
-          }
-
-          let images = [];
-          const altImages = document.querySelectorAll('#altImages li img, #main-image-container li img');
-          if (altImages.length > 0) {
-            images = Array.from(altImages)
-              .map(img => getHighResImage(img.src, 'Amazon'))
-              .filter(src => src && !src.includes('base64') && !src.includes('transparent') && !src.includes('video-slate'))
-              .slice(0, 12);
-          }
-          if (images.length === 0 && image) images = [image];
-
-          if (!description) {
-            const metaDesc = document.querySelector('meta[name="description"]')?.content;
-            if (metaDesc && metaDesc.length > 50 && !metaDesc.toLowerCase().includes('sponsored')) {
-              description = metaDesc;
-            }
-          }
-
-          let asin = '';
-          const asinEl = document.querySelector('#ASIN, input[name="ASIN"]');
-          if (asinEl) asin = asinEl.value;
-          
-          let affiliateLink = window.location.href.split('?')[0].split('/ref=')[0];
-          
-          const siteStripeShort = document.querySelector('#amzn-ss-text-shortlink-textarea, .amzn-ss-text-shortlink-textarea');
-          const siteStripeFull = document.querySelector('#amzn-ss-text-full-link-textarea, .amzn-ss-text-full-link-textarea');
-          
-          let isOfficial = false;
-          if (siteStripeShort && siteStripeShort.value && siteStripeShort.value.includes('amzn.to')) {
-            affiliateLink = siteStripeShort.value.trim();
-            isOfficial = true;
-          } else if (siteStripeFull && siteStripeFull.value && siteStripeFull.value.includes('tag=')) {
-            affiliateLink = siteStripeFull.value.trim();
-            isOfficial = true;
-          } else if (amazonTag && !affiliateLink.includes('tag=')) {
-            const separator = affiliateLink.includes('?') ? '&' : '?';
-            affiliateLink += `${separator}tag=${amazonTag}`;
-          }
-
-          products.push({
-            title: title.trim(),
-            fullTitle: title.trim(),
-            image: images[0] || getHighResImage(image, 'Amazon') || 'generic.svg',
-            images: images.length > 0 ? images : [getHighResImage(image, 'Amazon')].filter(Boolean),
-            price,
-            originalPrice,
-            description,
-            brand: 'Amazon',
-            platform: 'Amazon',
-            affiliateLink,
-            isOfficial, 
-            category: 'Electronics',
-            needsEnrichment: false
-          });
-        }
-      } catch (e) {}
-    }
-  } else if (window.location.href.includes("flipkart.com")) {
-    const isSingleProduct = !!document.querySelector('._2K67mX, ._35Ky56, .B_NuCI');
-    
-    if (isSingleProduct) {
-      try {
-        const titleEl = document.querySelector('.B_NuCI, ._35Ky56');
-        const priceEl = document.querySelector('._30jeq3._16Jk6d');
-        const origPriceEl = document.querySelector('._3I9_wc._27UcYP');
-        const imgEls = document.querySelectorAll('._20Y_m6 img, ._396cs4._2amPTt, .q6DClP');
-        
-        if (titleEl) {
-          const title = titleEl.innerText.trim();
-          const price = priceEl ? priceEl.innerText.trim() : '';
-          const originalPrice = origPriceEl ? origPriceEl.innerText.trim() : '';
-          
-          let images = Array.from(imgEls)
-            .map(img => getHighResImage(img.src, 'Flipkart'))
-            .filter(src => src && !src.includes('base64'))
-            .slice(0, 12);
-            
-          if (images.length === 0) {
-            const mainImg = document.querySelector('._396cs4._2amPTt, ._2r_T1I');
-            if (mainImg) images = [getHighResImage(mainImg.src, 'Flipkart')];
-          }
-
-          const highlightEls = document.querySelectorAll('._2418kt li');
-          let description = Array.from(highlightEls).map(el => el.innerText.trim()).join('\n\n');
-          
-          const descEl = document.querySelector('._1mXcCf, ._2u3t37');
-          if (descEl) description += '\n\n' + descEl.innerText.trim();
-
-          const affiliateLink = window.location.href.split('?')[0];
-
-          products.push({
-            title,
-            fullTitle: title,
-            image: images[0] || 'generic.svg',
-            images: images,
-            price,
-            originalPrice,
-            description: description || title,
-            brand: 'Flipkart',
-            platform: 'Flipkart',
-            affiliateLink,
-            category: 'Electronics',
-            needsEnrichment: false
-          });
-        }
-      } catch (e) {}
-    }
-
-    if (products.length === 0) {
-      const cards = document.querySelectorAll('._1xFAF9, ._4ddWXP, ._2kHMtA, ._1AtVbE');
-      cards.forEach(card => {
-        try {
-          const titleEl = card.querySelector('.s1Q9rs, ._4rR01T, .IRpwTa');
-          let title = titleEl ? titleEl.innerText.trim() : '';
-
-          const priceEl = card.querySelector('._30jeq3');
-          let priceValue = priceEl ? priceEl.innerText.replace(/[^\d.]/g, '').split('.')[0] : '';
-          let price = priceValue ? `₹${parseInt(priceValue).toLocaleString('en-IN')}` : '';
-
-          const origPriceEl = card.querySelector('._3I9_wc');
-          let origPriceValue = origPriceEl ? origPriceEl.innerText.replace(/[^\d.]/g, '').split('.')[0] : '';
-          let originalPrice = origPriceValue ? `₹${parseInt(origPriceValue).toLocaleString('en-IN')}` : '';
-
-          const imgEl = card.querySelector('img._396cs4, img._2r_T1I, img');
-          let image = imgEl ? imgEl.src : '';
-          image = getHighResImage(image, 'Flipkart');
-
-          const linkEl = card.querySelector('a._1fQZEK, a._2rpwqI, a._2Uzu_n');
-          let affiliateLink = linkEl ? linkEl.href.split('?')[0] : '';
-
-          if (title && (price || image)) {
-            products.push({
-              title,
-              fullTitle: title,
-              image,
-              images: [image].filter(Boolean),
-              price,
-              originalPrice,
-              description: title,
-              brand: 'Flipkart',
-              platform: 'Flipkart',
-              affiliateLink,
-              category: 'Electronics',
-              needsEnrichment: true
-            });
-          }
         } catch (e) {}
-      });
-      
-      if (products.length > 0) {
-        // Deep Extraction for Flipkart Bulk
-        const maxDeep = 10;
-        products.length = Math.min(products.length, maxDeep);
-        for (const p of products) {
-          if (p.affiliateLink) {
-            try {
-              const res = await fetch(p.affiliateLink);
-              const html = await res.text();
-              
-              const nextDataMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]+?)<\/script>/i);
-              if (nextDataMatch && nextDataMatch[1]) {
-                  const nd = JSON.parse(nextDataMatch[1]);
-                  const pdp = nd?.props?.pageProps?.initialData?.data?.getProductDetails?.productDetails 
-                            ?? nd?.props?.pageProps?.RESPONSE?.data?.productDetails 
-                            ?? nd?.props?.pageProps?.pageData?.productListing 
-                            ?? nd?.props?.pageProps;
-                  
-                  if (pdp) {
-                      const fkTitle = pdp.title ?? pdp.primaryInfo?.title ?? pdp.productName ?? pdp.name;
-                      if (fkTitle) {
-                          p.fullTitle = fkTitle;
-                          p.title = fkTitle;
-                      }
-                      
-                      const imgs = pdp.images ?? pdp.media?.images ?? pdp.imageUrls;
-                      if (imgs) {
-                          const fetchedImages = (Array.isArray(imgs) ? imgs.map(i => i.url || i) : [imgs])
-                              .map(url => getHighResImage(url, 'Flipkart'))
-                              .slice(0, 12);
-                          if (fetchedImages.length > 0) {
-                              p.images = fetchedImages;
-                              p.image = fetchedImages[0];
-                          }
-                      }
+      }
 
-                      const highlights = pdp.highlights;
-                      if (Array.isArray(highlights)) {
-                          p.description = highlights.map(h => h.text).filter(Boolean).join('\n\n');
-                      }
-                      p.needsEnrichment = false;
-                  } else {
-                      p.invalid = true;
-                  }
-              } else {
-                  p.invalid = true;
-              }
-            } catch(e) {}
-          }
+      // Deep fetch top 20 products for full data
+      const toDeep = products.slice(0, 20);
+      for (const p of toDeep) {
+        await deepFetchAmazon(p);
+      }
+    }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // FLIPKART
+  // ════════════════════════════════════════════════════════════════════════════
+  } else if (isFlipkart) {
+    const isSingle = !!(
+      document.querySelector('[class*="B_NuCI"],[class*="yhB1nd"],[class*="G6XhRU"],[class*="VU-ZEz"]') &&
+      document.querySelector('[class*="Nx9bqj"],[class*="_30jeq3"],[class*="CxhGGd"]')
+    );
+
+    if (isSingle) {
+      // ── Single Flipkart product page ────────────────────────────────────────
+      try {
+        const titleEl = document.querySelector('[class*="B_NuCI"],[class*="yhB1nd"],[class*="G6XhRU"],[class*="VU-ZEz"]');
+        const title = (titleEl?.textContent || '').trim();
+        if (!title) return products;
+
+        const priceEl = document.querySelector('[class*="Nx9bqj"],[class*="_30jeq3"],[class*="CxhGGd"]');
+        const price = priceEl ? extractPrice(priceEl.textContent) : '';
+        const origEl = document.querySelector('[class*="_3I9_wc"],[class*="yRaY8j"],[class*="27UcYP"]');
+        const originalPrice = origEl ? extractPrice(origEl.textContent) : '';
+
+        const images = [];
+        document.querySelectorAll('[class*="_396cs4"] img,[class*="DByuf4"] img,[class*="qjESDB"] img,[class*="CZMQYi"] img').forEach(img => {
+          const hi = cleanFlipkartImg(img.src || '');
+          if (hi && !hi.includes('base64') && !images.includes(hi)) images.push(hi);
+        });
+
+        const hlEls = document.querySelectorAll('[class*="_1mXcCf"] li,[class*="X3BRps"] li,[class*="_2418kt"] li,[class*="Xc6yYM"] li');
+        let description = Array.from(hlEls).map(el => el.textContent.trim()).filter(t => t.length > 5).join('\n\n');
+        if (!description) {
+          const descEl = document.querySelector('[class*="_1mXcCf"],[class*="X3BRps"]');
+          description = (descEl?.textContent || '').trim();
         }
+
+        const affiliateLink = location.href.split('?')[0];
+
+        products.push({
+          title, fullTitle: title,
+          url: affiliateLink, affiliateLink,
+          image: images[0] || '', images: images.slice(0, 12),
+          price, originalPrice, description: description || title,
+          brand: 'Flipkart', platform: 'Flipkart', category: guessCategory(),
+          needsEnrichment: false
+        });
+      } catch (e) { console.error('Flipkart single page error', e); }
+
+    } else {
+      // ── Flipkart search/listing page — bulk scrape + deep fetch ────────────
+      const category = guessCategory();
+
+      const cards = Array.from(document.querySelectorAll(
+        'div[class*="_1AtVbE"],div[class*="_4ddWXP"],div[class*="_2kHMtA"],div[class*="_1xFAF9"],div[class*="cPHDOP"]'
+      ));
+
+      for (const card of cards) {
+        try {
+          const titleEl = card.querySelector('[class*="IRpwTa"],[class*="s1Q9rs"],[class*="_4rR01T"],[class*="WKTcLC"],[class*="col-12-12"] a [class*="_4rR01T"]');
+          let title = (titleEl?.textContent || '').trim();
+          if (!title) {
+            const anchor = card.querySelector('a[href*="/p/"]');
+            title = (anchor?.textContent || '').trim().split('\n')[0];
+          }
+          if (!title || title.length < 5) continue;
+
+          const priceEl = card.querySelector('[class*="_30jeq3"],[class*="Nx9bqj"],[class*="_1_WHN1"]');
+          const price = priceEl ? extractPrice(priceEl.textContent) : '';
+          const origEl = card.querySelector('[class*="_3I9_wc"],[class*="yRaY8j"]');
+          const originalPrice = origEl ? extractPrice(origEl.textContent) : '';
+
+          const images = [];
+          card.querySelectorAll('img').forEach(img => {
+            const hi = cleanFlipkartImg(img.src || '');
+            if (hi && hi.includes('rukminim') && !hi.includes('base64') && !images.includes(hi)) images.push(hi);
+          });
+
+          const linkEl = card.querySelector('a[href*="/p/"]');
+          if (!linkEl) continue;
+          const raw = linkEl.getAttribute('href') || '';
+          const affiliateLink = raw.startsWith('http') ? raw.split('?')[0] : `https://www.flipkart.com${raw.split('?')[0]}`;
+
+          products.push({
+            title, fullTitle: title,
+            url: affiliateLink, affiliateLink,
+            image: images[0] || '', images,
+            price, originalPrice, description: title,
+            brand: 'Flipkart', platform: 'Flipkart', category,
+            needsEnrichment: true
+          });
+        } catch (e) {}
+      }
+
+      // Deep fetch top 20 products
+      const toDeep = products.slice(0, 20);
+      for (const p of toDeep) {
+        await deepFetchFlipkart(p);
       }
     }
   }
 
+  // ── Deduplicate ──────────────────────────────────────────────────────────────
+  const seen = new Set();
   const uniqueProducts = [];
-  const titles = new Set();
   for (const p of products) {
-    if (p.invalid) continue; // Skip products that failed deep extraction
-    if (!titles.has(p.title)) {
-      titles.add(p.title);
-      if (manualLink) p.affiliateLink = manualLink;
+    if (p.invalid) continue;
+    const key = (p.title || '').slice(0, 60).toLowerCase();
+    if (!seen.has(key) && p.title) {
+      seen.add(key);
+      if (manualLink) { p.affiliateLink = manualLink; p.url = manualLink; }
       uniqueProducts.push(p);
     }
   }
 
+  console.log(`✅ SmartChoose v4.0: ${uniqueProducts.length} products extracted.`);
   return uniqueProducts;
 })();

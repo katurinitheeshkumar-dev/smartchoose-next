@@ -75,7 +75,10 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     try {
       const res = await fetch('https://smartchoose-proxy.vercel.app/api/cron/auto-index.js', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-trigger': 'true' }
+        headers: { 
+          'Content-Type': 'application/json', 
+          'x-admin-trigger': 'true' 
+        }
       });
       const data = await res.json();
       if (data.success) {

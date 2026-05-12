@@ -270,7 +270,7 @@ function BlogEditor({ initialPost, onSave, onCancel, isSaving }: any) {
 import { useSearchParams, useRouter } from 'next/navigation';
 
 export function AdminBlogPosts() {
-  const { fetchAdminBlogs, addBlog, updateBlog, deleteBlog, broadcastBlog, siteStats } = useDatabase();
+  const { fetchAdminBlogs, addBlog, updateBlog, deleteBlog, broadcastBlog, requestInstantIndexing, siteStats } = useDatabase();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -343,8 +343,19 @@ export function AdminBlogPosts() {
   const handleSave = async (data: any) => {
     setIsSaving(true);
     try {
-      if (editingPost) { await updateBlog(editingPost.id, data); }
-      else { const id = await addBlog(data); if (data.status === 'published') broadcastBlog(id); }
+      if (editingPost) { 
+        await updateBlog(editingPost.id, data); 
+        if (data.status === 'published') {
+          requestInstantIndexing(`https://smartchoose.in/blog/${data.slug}`);
+        }
+      }
+      else { 
+        const id = await addBlog(data); 
+        if (data.status === 'published') {
+          broadcastBlog(id);
+          requestInstantIndexing(`https://smartchoose.in/blog/${data.slug}`);
+        }
+      }
       setView('list'); setEditingPost(null); loadBlogs(currentPage);
     } catch (e) { alert('Save failed'); } finally { setIsSaving(false); }
   };
@@ -451,6 +462,7 @@ export function AdminBlogPosts() {
                   const publishData = { ...data, status: 'published' };
                   const id = await addBlog(publishData);
                   broadcastBlog(id);
+                  requestInstantIndexing(`https://smartchoose.in/blog/${publishData.slug}`);
                   setToast('✅ Blog published successfully!');
                   setTimeout(() => setToast(''), 3000);
                   loadBlogs(1);
