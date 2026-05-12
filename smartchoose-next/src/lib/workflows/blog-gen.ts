@@ -4,7 +4,7 @@ import { collection, addDoc } from 'firebase/firestore';
 
 // Helper to call Gemini API from the server
 async function callGemini(prompt: string, apiKey: string, isJson: boolean = false) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -159,13 +159,22 @@ async function writeContentStep(title: string, intro: string, apiKey: string) {
 async function generateProductsStep(title: string, apiKey: string) {
   "use step";
   const prompt = `
-    Based on the blog title "${title}", suggest 3 relevant products.
-    Also write a final conclusion paragraph.
-    IMPORTANT: Return ONLY a valid JSON object.
+    Based on the blog title "${title}", suggest 3-5 high-quality, relevant products that a budget-conscious Indian buyer would love.
+    Requirements:
+    - Provide deep, helpful reasons to buy for each product.
+    - STICK TO CORRECT SPELLING.
+    - Return ONLY a valid JSON object. No markdown, no intro.
     {
-      "conclusion": "Final wrap-up paragraph",
+      "conclusion": "A detailed 200-word wrap-up conclusion that summarizes the guide and gives a final recommendation.",
       "products": [
-        { "id": "1", "name": "Product Name", "description": "Quick reason to buy", "pros": ["Pro 1", "Pro 2"], "price": "Price", "affiliateLink": "" }
+        { 
+          "id": "gen-1", 
+          "name": "Full Product Name (e.g. Boat Storm Call 3)", 
+          "description": "A 50-word detailed breakdown of why this product is a top choice.", 
+          "pros": ["Major advantage 1", "Major advantage 2", "Major advantage 3"], 
+          "price": "₹1,999 (Approx.)", 
+          "affiliateLink": "https://amzn.to/example" 
+        }
       ]
     }
   `;

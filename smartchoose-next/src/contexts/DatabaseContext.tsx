@@ -530,8 +530,13 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           limit(pageSize)
         );
       } else {
-        const constraints: any[] = [orderBy('updatedAt', 'desc'), limit(pageSize)];
-        if (statusFilter !== 'all') constraints.unshift(where('status', '==', statusFilter));
+        const constraints: any[] = [limit(pageSize)];
+        if (statusFilter !== 'all') {
+          constraints.push(where('status', '==', statusFilter));
+          // Note: Removing orderBy here avoids the need for a composite index (status + updatedAt)
+        } else {
+          constraints.push(orderBy('updatedAt', 'desc'));
+        }
         if (lastVisible) constraints.push(startAfter(lastVisible));
         
         q = query(collection(db, 'blogPosts'), ...(constraints as any));
@@ -570,8 +575,12 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           limit(pageSize)
         );
       } else {
-        const constraints: any[] = [orderBy('postedAt', 'desc'), limit(pageSize)];
-        if (statusFilter !== 'all') constraints.unshift(where('status', '==', statusFilter));
+        const constraints: any[] = [limit(pageSize)];
+        if (statusFilter !== 'all') {
+          constraints.push(where('status', '==', statusFilter));
+        } else {
+          constraints.push(orderBy('postedAt', 'desc'));
+        }
         if (lastVisible) constraints.push(startAfter(lastVisible));
         
         q = query(collection(db, 'jobs'), ...(constraints as any));
