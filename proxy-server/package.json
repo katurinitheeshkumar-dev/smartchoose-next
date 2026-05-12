@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "SmartChoose product fetch proxy - runs on Vercel free tier",
     "private": true,
+    "type": "module",
     "scripts": {
         "dev": "vercel dev"
     },

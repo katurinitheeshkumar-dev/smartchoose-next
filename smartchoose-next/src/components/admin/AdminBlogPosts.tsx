@@ -346,14 +346,14 @@ export function AdminBlogPosts() {
       if (editingPost) { 
         await updateBlog(editingPost.id, data); 
         if (data.status === 'published') {
-          requestInstantIndexing(`https://smartchoose.in/blog/${data.slug}`);
+          requestInstantIndexing(`https://www.smartchoose.in/blog/${data.slug}`);
         }
       }
       else { 
         const id = await addBlog(data); 
         if (data.status === 'published') {
           broadcastBlog(id);
-          requestInstantIndexing(`https://smartchoose.in/blog/${data.slug}`);
+          requestInstantIndexing(`https://www.smartchoose.in/blog/${data.slug}`);
         }
       }
       setView('list'); setEditingPost(null); loadBlogs(currentPage);
@@ -462,7 +462,7 @@ export function AdminBlogPosts() {
                   const publishData = { ...data, status: 'published' };
                   const id = await addBlog(publishData);
                   broadcastBlog(id);
-                  requestInstantIndexing(`https://smartchoose.in/blog/${publishData.slug}`);
+                  requestInstantIndexing(`https://www.smartchoose.in/blog/${publishData.slug}`);
                   setToast('✅ Blog published successfully!');
                   setTimeout(() => setToast(''), 3000);
                   loadBlogs(1);

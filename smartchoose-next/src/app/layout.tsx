@@ -12,7 +12,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://smartchoose.in"),
+  metadataBase: new URL("https://www.smartchoose.in"),
   title: "SmartChoose - Premium Product Discovery",
   description: "Discover Premium Products | Compare & Shop Smart",
   icons: {

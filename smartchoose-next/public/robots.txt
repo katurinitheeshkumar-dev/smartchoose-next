@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 
-Sitemap: https://smartchoose.in/sitemap.xml
+Sitemap: https://www.smartchoose.in/sitemap.xml

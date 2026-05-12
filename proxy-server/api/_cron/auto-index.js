@@ -14,7 +14,7 @@
 import { db } from '../_lib/firebase-admin.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
-const SITE_URL = 'https://smartchoose.in';
+const SITE_URL = 'https://www.smartchoose.in';
 const INDEXNOW_KEY = 'dd5c73365f1c0bd0015bb64f56861a45';
 
 // Google Indexing API via service account in env
@@ -58,7 +58,7 @@ async function submitIndexNow(urls) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify({
-          host: 'smartchoose.in',
+          host: 'www.smartchoose.in',
           key: INDEXNOW_KEY,
           keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
           urlList: batch

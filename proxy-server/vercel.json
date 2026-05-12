@@ -17,7 +17,7 @@
     "rewrites": [
         {
             "source": "/api/cron/:path*",
-            "destination": "/api/_cron/:path*"
+            "destination": "/api/tasks.js?task=:path*"
         }
     ],
     "headers": [

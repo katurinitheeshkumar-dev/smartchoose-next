@@ -1,22 +1,25 @@
 import { db } from './_lib/firebase-admin.js';
-// We will import logic from the other files if needed, 
-// but for simplicity on Vercel, we can just use a single entry point.
+import autoIndexHandler from './_cron/auto-index.js';
 
 export default async function handler(req, res) {
-  const { task } = req.query;
+  // Support both query and body for the task name
+  const task = req.query.task || req.body?.task;
 
   try {
+    // If it's an indexing trigger (manual from admin, instant from creation, or cron)
+    if (task?.startsWith('auto-index') || req.headers['x-admin-trigger'] === 'true' || req.body?.url) {
+      return await autoIndexHandler(req, res);
+    } 
+    
     if (task === 'price-sync') {
-      // Logic from price-sync.js
       return res.status(200).json({ message: 'Price sync task triggered' });
-    } else if (task === 'auto-index') {
-      return res.status(200).json({ message: 'Auto index task triggered' });
     } else if (task === 'job-hunter') {
       return res.status(200).json({ message: 'Job hunter task triggered' });
     }
     
     return res.status(400).json({ error: 'Unknown task' });
   } catch (err) {
+    console.error('Task error:', err);
     return res.status(500).json({ error: err.message });
   }
 }

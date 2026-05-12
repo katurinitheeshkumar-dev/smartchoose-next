@@ -196,7 +196,7 @@ export function AdminProducts() {
         successCount++;
         syncedProducts.push({ ...finalData, id: newId });
         // Trigger instant indexing for each synced product
-        requestInstantIndexing(`https://smartchoose.in/product/${newId}`);
+        requestInstantIndexing(`https://www.smartchoose.in/product/${newId}`);
       }
     }
 
@@ -604,7 +604,7 @@ export function AdminProducts() {
         if (finalData.published && productId) {
           setToast({ show: true, message: 'Product created! Broadcasting alerts...', type: 'info' });
           broadcastProduct(productId);
-          requestInstantIndexing(`https://smartchoose.in/product/${productId}`);
+          requestInstantIndexing(`https://www.smartchoose.in/product/${productId}`);
         }
       }
       
