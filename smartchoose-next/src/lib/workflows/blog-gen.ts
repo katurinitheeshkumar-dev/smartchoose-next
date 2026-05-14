@@ -52,7 +52,7 @@ async function callAI(prompt: string, keys: { geminiApiKey?: string, openaiApiKe
   // Try Gemini First if key exists
   if (geminiApiKey) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -293,32 +293,45 @@ async function verifyAIKeysStep(keys: { geminiApiKey?: string, openaiApiKey?: st
   }
 
   if (geminiApiKey) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] })
-    });
-    if (res.ok) return { provider: 'gemini' };
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] })
+      });
+      if (res.ok) return { provider: 'gemini' };
+      const errData = await res.json();
+      console.error("Gemini Verification Failed:", res.status, JSON.stringify(errData));
+    } catch (e: any) {
+      console.error("Gemini Fetch Error:", e.message);
+    }
   }
 
   if (openaiApiKey) {
-    const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: "hi" }],
-        max_tokens: 5
-      })
-    });
-    if (res.ok) return { provider: 'openai' };
+    try {
+      const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: "hi" }],
+          max_tokens: 5
+        })
+      });
+      if (res.ok) return { provider: 'openai' };
+      const errData = await res.json();
+      console.error("OpenAI Verification Failed:", res.status, JSON.stringify(errData));
+    } catch (e: any) {
+      console.error("OpenAI Fetch Error:", e.message);
+    }
   }
 
-  throw new Error("AI API Key Verification Failed for all providers. Please check your keys.");
+  throw new Error("AI API Key Verification Failed for all providers. Please check your keys and credits.");
 }
+
 
 async function planBlogStep(title: string, style: string, keys: any) {
   "use step";
