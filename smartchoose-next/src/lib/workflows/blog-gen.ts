@@ -120,15 +120,15 @@ async function planBlogStep(title: string, style: string, apiKey: string) {
     // Clean potential markdown code blocks
     const cleanJson = raw.replace(/```json|```/g, '').trim();
     return JSON.parse(cleanJson);
-  } catch (e) {
+  } catch (e: any) {
     console.error("PlanBlogStep Failed, using fallback", e);
     return {
       title: title,
       slug: title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, ''),
       category: 'Gadgets',
-      intro: `Welcome to our comprehensive guide on ${title}. Today we dive deep into the best options available.`,
+      intro: `PlanBlogStep Error: ${e.message}. Please check API key, quota, or model endpoint.`,
       seoTitle: title.slice(0, 60),
-      seoDescription: `Learn everything about ${title} in this expert guide.`,
+      seoDescription: `Error: ${e.message}`,
       tags: ['Gadgets', 'Guide']
     };
   }
@@ -151,8 +151,8 @@ async function writeContentStep(title: string, intro: string, apiKey: string) {
   `;
   try {
     return await callGemini(prompt, apiKey, false);
-  } catch (e) {
-    return `<section><h2>Detailed Analysis of ${title}</h2><p>Content generation failed, but stay tuned for updates on this topic.</p></section>`;
+  } catch (e: any) {
+    return `<section><h2>Detailed Analysis of ${title}</h2><p>Content generation failed with error: <strong>${e.message}</strong></p></section>`;
   }
 }
 
@@ -184,9 +184,9 @@ async function generateProductsStep(title: string, apiKey: string) {
     const raw = await callGemini(prompt, apiKey, false);
     const cleanJson = raw.replace(/```json|```/g, '').trim();
     return JSON.parse(cleanJson);
-  } catch (e) {
+  } catch (e: any) {
     return {
-      conclusion: `In conclusion, ${title} is a great area to explore. We hope this guide helped you make a smart choice.`,
+      conclusion: `GenerateProductsStep Error: ${e.message}`,
       products: []
     };
   }
