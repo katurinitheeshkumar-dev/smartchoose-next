@@ -424,16 +424,24 @@ export function AdminBlogPosts() {
         </div>
         <div className="flex flex-wrap gap-3">
           {settings.deepResearchActive ? (
-            <div className="bg-amber-50 border border-amber-200 px-6 py-2 rounded-2xl flex items-center gap-4 shadow-sm">
-              <div className="flex flex-col">
-                <span className="text-[9px] font-black uppercase text-amber-600 tracking-tighter flex items-center gap-1">
-                   <Icon name="brain" size={10} className="animate-pulse" />
-                   AI Deep Research: {settings.deepResearchCount || 0} of {settings.deepResearchTotal || 3} Blogs Drafted
+            <div className="bg-amber-50 border border-amber-200 px-6 py-3 rounded-2xl flex flex-col gap-2 shadow-sm min-w-[240px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-amber-700 tracking-tight flex items-center gap-1.5">
+                   <Icon name="brain" size={12} className="animate-pulse" />
+                   AI RESEARCH: {Math.round(((settings.deepResearchCount || 0) / (settings.deepResearchTotal || 3)) * 100)}% COMPLETE
                 </span>
-
-                <span className="text-sm font-black text-slate-900 font-mono">{timeLeft}</span>
+                <span className="text-xs font-black text-slate-900 font-mono">{timeLeft}</span>
               </div>
-              <div className="w-8 h-8 rounded-full border-2 border-amber-200 border-t-amber-500 animate-spin" />
+              <div className="h-1.5 w-full bg-amber-200/50 rounded-full overflow-hidden">
+                <m.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((settings.deepResearchCount || 0) / (settings.deepResearchTotal || 3)) * 100}%` }}
+                  className="h-full bg-amber-500 rounded-full"
+                />
+              </div>
+              <p className="text-[9px] font-bold text-amber-600/70 uppercase tracking-widest text-center">
+                Drafting {settings.deepResearchCount || 0} of {settings.deepResearchTotal || 3} Premium Articles...
+              </p>
             </div>
           ) : (
             <button 
