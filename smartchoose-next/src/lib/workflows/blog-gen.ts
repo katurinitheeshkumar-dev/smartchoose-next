@@ -4,7 +4,7 @@ import { collection, addDoc } from 'firebase/firestore';
 
 // Helper to call Gemini API from the server
 async function callGemini(prompt: string, apiKey: string, isJson: boolean = false) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -163,6 +163,7 @@ async function generateProductsStep(title: string, apiKey: string) {
     Requirements:
     - Provide deep, helpful reasons to buy for each product.
     - STICK TO CORRECT SPELLING.
+    - IMPORTANT: NEVER use source.unsplash.com for images.
     - Return ONLY a valid JSON object. No markdown, no intro.
     {
       "conclusion": "A detailed 200-word wrap-up conclusion that summarizes the guide and gives a final recommendation.",
@@ -173,7 +174,8 @@ async function generateProductsStep(title: string, apiKey: string) {
           "description": "A 50-word detailed breakdown of why this product is a top choice.", 
           "pros": ["Major advantage 1", "Major advantage 2", "Major advantage 3"], 
           "price": "₹1,999 (Approx.)", 
-          "affiliateLink": "https://amzn.to/example" 
+          "affiliateLink": "https://amzn.to/example",
+          "image": "https://image.pollinations.ai/prompt/Boat%20Storm%20Call%203?width=800&height=600&nologo=true"
         }
       ]
     }
