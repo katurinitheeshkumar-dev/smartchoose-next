@@ -1,5 +1,6 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
 import { m, AnimatePresence } from 'framer-motion';
 import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
@@ -19,6 +20,15 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
   const [showKeyInput, setShowKeyInput] = useState(!settings.geminiApiKey);
   const [isVerifying, setIsVerifying] = useState(false);
   const [autoPublishMode, setAutoPublishMode] = useState(false);
+
+  // Sync with global settings if they update
+  useEffect(() => {
+    if (settings.geminiApiKey) {
+      setApiKey(settings.geminiApiKey);
+      setShowKeyInput(false);
+    }
+  }, [settings.geminiApiKey]);
+
 
   const handleGenerate = async (publishImmediately: boolean = false) => {
     setAutoPublishMode(publishImmediately);
@@ -110,8 +120,16 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
             </div>
             <div>
               <h2 className="text-2xl font-black text-slate-900">AI Blog Generator</h2>
-              <p className="text-slate-500 text-sm">Create professional SEO blogs in seconds</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${settings.geminiApiKey && settings.geminiApiKey !== 'Nitheesh' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                  {settings.geminiApiKey && settings.geminiApiKey !== 'Nitheesh' ? 'Gemini: Ready' : 'Gemini: Missing'}
+                </span>
+                <span className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${settings.openaiApiKey ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                  {settings.openaiApiKey ? 'OpenAI: Active' : 'OpenAI: No Key'}
+                </span>
+              </div>
             </div>
+
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
             <Icon name="x" size={24} />

@@ -289,8 +289,11 @@ async function verifyAIKeysStep(keys: { geminiApiKey?: string, openaiApiKey?: st
   const { geminiApiKey, openaiApiKey } = keys;
   
   if (!geminiApiKey && !openaiApiKey) {
-    throw new Error("No API keys (Gemini or OpenAI) found in settings.");
+    throw new Error("DEBUG: No API keys found in the workflow input. Please ensure settings are saved.");
   }
+
+  let geminiError = "Not provided";
+  let openaiError = "Not provided";
 
   if (geminiApiKey) {
     try {
@@ -300,10 +303,12 @@ async function verifyAIKeysStep(keys: { geminiApiKey?: string, openaiApiKey?: st
         body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] })
       });
       if (res.ok) return { provider: 'gemini' };
+      
       const errData = await res.json();
-      console.error("Gemini Verification Failed:", res.status, JSON.stringify(errData));
+      geminiError = `Status ${res.status}: ${errData.error?.message || JSON.stringify(errData)}`;
+      console.error("DIAGNOSTIC: Gemini Fail:", geminiError);
     } catch (e: any) {
-      console.error("Gemini Fetch Error:", e.message);
+      geminiError = `Fetch Error: ${e.message}`;
     }
   }
 
@@ -322,15 +327,19 @@ async function verifyAIKeysStep(keys: { geminiApiKey?: string, openaiApiKey?: st
         })
       });
       if (res.ok) return { provider: 'openai' };
+      
       const errData = await res.json();
-      console.error("OpenAI Verification Failed:", res.status, JSON.stringify(errData));
+      openaiError = `Status ${res.status}: ${errData.error?.message || JSON.stringify(errData)}`;
+      console.error("DIAGNOSTIC: OpenAI Fail:", openaiError);
     } catch (e: any) {
-      console.error("OpenAI Fetch Error:", e.message);
+      openaiError = `Fetch Error: ${e.message}`;
     }
   }
 
-  throw new Error("AI API Key Verification Failed for all providers. Please check your keys and credits.");
+  // THROW THE FULL DIAGNOSTIC TO THE UI
+  throw new Error(`CRITICAL: AI Keys Failed Verification.\n\nGEMINI: ${geminiError}\n\nOPENAI: ${openaiError}\n\nAction: Please verify your keys start with 'AIza' (Gemini) or 'sk-proj' (OpenAI) and have billing/credits active.`);
 }
+
 
 
 async function planBlogStep(title: string, style: string, keys: any) {
