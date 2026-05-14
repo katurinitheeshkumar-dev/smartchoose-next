@@ -2,6 +2,47 @@ import { BlogPost } from '@/types';
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
+/**
+ * UTILITIES
+ */
+
+// Helper to convert JS object to Firestore REST API format
+function toFirestoreValue(val: any): any {
+  if (val === null || val === undefined) return { nullValue: null };
+  if (typeof val === 'string') return { stringValue: val };
+  if (typeof val === 'number') {
+    if (Number.isInteger(val)) return { integerValue: val.toString() };
+    return { doubleValue: val };
+  }
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (val instanceof Date) return { timestampValue: val.toISOString() };
+  if (Array.isArray(val)) {
+    return {
+      arrayValue: {
+        values: val.map(toFirestoreValue)
+      }
+    };
+  }
+  if (typeof val === 'object') {
+    const fields: any = {};
+    for (const [k, v] of Object.entries(val)) {
+      fields[k] = toFirestoreValue(v);
+    }
+    return {
+      mapValue: { fields }
+    };
+  }
+  return { stringValue: String(val) };
+}
+
+// Helper to clean Gemini response from markdown formatting
+function cleanGeminiResponse(text: string): string {
+  return text
+    .replace(/```(html|json|markdown|)\n?/gi, '') // Remove opening ```tags
+    .replace(/\n?```$/g, '')                    // Remove closing ```
+    .trim();
+}
+
 // Helper to call Gemini API from the server
 async function callGemini(prompt: string, apiKey: string, isJson: boolean = false) {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -9,7 +50,14 @@ async function callGemini(prompt: string, apiKey: string, isJson: boolean = fals
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: isJson ? { response_mime_type: "application/json" } : {}
+      generationConfig: isJson ? { 
+        response_mime_type: "application/json",
+        temperature: 0.7,
+        topP: 0.95
+      } : {
+        temperature: 0.8,
+        topP: 0.95
+      }
     })
   });
 
@@ -19,9 +67,26 @@ async function callGemini(prompt: string, apiKey: string, isJson: boolean = fals
   }
 
   const data = await res.json();
-  const text = data.candidates[0].content.parts[0].text;
-  return isJson ? JSON.parse(text) : text;
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  
+  // Always clean the response from potential markdown wrappers
+  text = cleanGeminiResponse(text);
+  
+  if (isJson) {
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("Failed to parse Gemini JSON:", text);
+      throw new Error("Gemini returned invalid JSON format.");
+    }
+  }
+  
+  return text;
 }
+
+/**
+ * WORKFLOWS
+ */
 
 /**
  * NEW: Workflow for Daily Auto-Post (Trending Topic)
@@ -29,6 +94,9 @@ async function callGemini(prompt: string, apiKey: string, isJson: boolean = fals
 export async function dailyAutoPostWorkflow(input: { apiKey: string }) {
   "use workflow";
   const { apiKey } = input;
+
+  // 0. Verify Key
+  await verifyApiKeyStep(apiKey);
 
   // 1. Find a trending topic
   const trendingTopic = await findTrendingTopicStep(apiKey);
@@ -56,7 +124,11 @@ export async function dailyAutoPostWorkflow(input: { apiKey: string }) {
   };
 
   // 4. Save to Firestore
-  await saveBlogPostStep(blogPost);
+  const saved = await saveBlogPostStep(blogPost);
+  
+  if (!saved) {
+    throw new Error("Failed to save blog post to Firestore.");
+  }
 
   return { success: true, title: meta.title };
 }
@@ -69,6 +141,9 @@ export async function blogGenerationWorkflow(input: { title: string; style: stri
 
   const { title, style, apiKey } = input;
   
+  // 0. Verify Key
+  await verifyApiKeyStep(apiKey);
+
   // 1. Plan Blog (Metadata & Intro)
   const meta = await planBlogStep(title, style, apiKey);
   
@@ -96,115 +171,128 @@ export async function blogGenerationWorkflow(input: { title: string; style: stri
   };
 }
 
-// Durable Steps using "use step"
+/**
+ * STEPS
+ */
+
+/**
+ * verifyApiKeyStep: Ensures the Gemini API key is valid before starting work.
+ */
+async function verifyApiKeyStep(apiKey: string) {
+  "use step";
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(`API Key Verification Failed: ${err.error?.message || 'Unknown'}`);
+    }
+    return true;
+  } catch (e: any) {
+    throw new Error(`Connection Error during API verification: ${e.message}`);
+  }
+}
+
 async function planBlogStep(title: string, style: string, apiKey: string) {
   "use step";
   const prompt = `
-    As an expert SEO strategist for SmartChoose.in, create the metadata for a blog about: "${title}".
-    Style: ${style}
-    TARGET: Budget-conscious Indian buyers. Use Indian context.
-    IMPORTANT: STICK TO CORRECT SPELLING (e.g., "Smartwatch" NOT "Smartch Whatch").
-    IMPORTANT: Return ONLY a valid JSON object.
+    As an expert SEO strategist for SmartChoose.in (India's leading product discovery platform), create the metadata for a HIGH-CONVERSION blog about: "${title}".
+    Style: ${style} (Premium Magazine Style)
+    TARGET: Budget-conscious yet quality-seeking Indian buyers.
+    
+    REQUIREMENTS:
+    - TITLE: Must be a "Power Title" with numbers or strong emotional hooks (e.g. "Don't Buy Until You Read This", "Ultimate 2026 Guide").
+    - SLUG: Clean, SEO-friendly URL slug.
+    - CATEGORY: One of [Gadgets, Phones, Laptops, Lifestyle, Deals, Smartwatch, Earbuds].
+    - INTRO: A highly engaging 3-paragraph introduction (350 words). 
+      * Paragraph 1: The "Hook" - identify a common pain point.
+      * Paragraph 2: The "Expert Insight" - why this topic matters right now in India.
+      * Paragraph 3: The "Promise" - what the reader will learn.
+    - SEO: Optimized for 2026 search trends.
+    
+    Return ONLY a valid JSON object:
     {
-      "title": "Optimized SEO Title with Power Words",
-      "slug": "url-friendly-slug",
-      "category": "Gadgets|Phones|Laptops|Lifestyle|Deals",
-      "intro": "A highly engaging 3-paragraph introduction (300 words) that hooks the reader instantly.",
-      "seoTitle": "Meta title (under 60 chars)",
-      "seoDescription": "Meta description (under 155 chars) with high CTR potential.",
-      "tags": ["tag1", "tag2", "tag3"]
+      "title": "...",
+      "slug": "...",
+      "category": "...",
+      "intro": "...",
+      "seoTitle": "...",
+      "seoDescription": "...",
+      "tags": ["...", "...", "..."]
     }
   `;
-  try {
-    const raw = await callGemini(prompt, apiKey, false);
-    // Clean potential markdown code blocks
-    const cleanJson = raw.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleanJson);
-  } catch (e: any) {
-    console.error("PlanBlogStep Failed, using fallback", e);
-    return {
-      title: title,
-      slug: title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, ''),
-      category: 'Gadgets',
-      intro: `PlanBlogStep Error: ${e.message}. Please check API key, quota, or model endpoint.`,
-      seoTitle: title.slice(0, 60),
-      seoDescription: `Error: ${e.message}`,
-      tags: ['Gadgets', 'Guide']
-    };
-  }
+  return await callGemini(prompt, apiKey, true);
 }
 
 async function writeContentStep(title: string, intro: string, apiKey: string) {
   "use step";
   const prompt = `
-    Write the main body content for a high-authority blog: "${title}".
-    Intro already written was: "${intro}"
-    Requirements:
-    - STICK TO CORRECT SPELLING (e.g., "Smartwatch" NOT "Smartch Whatch").
-    - Write at least 6-8 detailed sections using <h2> and <h3> tags.
-    - Each section must have deep technical analysis or practical value.
-    - Use HTML format (headers, paragraphs, bold text, bullet points).
-    - Use Rupee (₹) symbols for all prices.
-    - Focus on the Indian market.
-    - DO NOT include introduction or conclusion yet.
+    Write the DEEP TECHNICAL ANALYSIS and BODY CONTENT for a premium authority blog: "${title}".
+    Intro already written: "${intro}"
+    
+    CONTENT STRUCTURE REQUIREMENTS:
+    1. 6-8 Detailed Sections using <h2> and <h3> tags.
+    2. INCLUDE A COMPARISON TABLE: Use <table>, <thead>, <tbody>, <tr>, <th>, <td> tags. Compare at least 3 categories (e.g. Price, Battery, Value).
+    3. EXPERT VERDICT SECTIONS: Add a small section in each main block called "SmartChoose Verdict" using <strong>.
+    4. TONE: Authoritative, helpful, and sophisticated.
+    5. FORMATTING: Use bold text for key specifications. Use <ul> for feature lists.
+    6. INDIAN CONTEXT: Mention Rupee (₹) prices, Indian brands, and local usage scenarios.
+    
+    IMPORTANT: STICK TO CORRECT SPELLING (e.g., "Smartwatch" NOT "Smartch Whatch").
+    IMPORTANT: DO NOT include the introduction or conclusion.
     Return ONLY the HTML string.
   `;
-  try {
-    return await callGemini(prompt, apiKey, false);
-  } catch (e: any) {
-    return `<section><h2>Detailed Analysis of ${title}</h2><p>Content generation failed with error: <strong>${e.message}</strong></p></section>`;
-  }
+  return await callGemini(prompt, apiKey, false);
 }
 
 async function generateProductsStep(title: string, apiKey: string) {
   "use step";
   const prompt = `
-    Based on the blog title "${title}", suggest 3-5 high-quality, relevant products that a budget-conscious Indian buyer would love.
-    Requirements:
-    - Provide deep, helpful reasons to buy for each product.
-    - STICK TO CORRECT SPELLING.
-    - IMPORTANT: NEVER use source.unsplash.com for images.
-    - Return ONLY a valid JSON object. No markdown, no intro.
+    Suggest 3-5 high-quality products for the blog: "${title}".
+    Target: Indian market.
+    
+    FOR EACH PRODUCT:
+    - ID: "gen-X"
+    - NAME: Full official name.
+    - DESCRIPTION: 60-word persuasive summary.
+    - PROS: 3-4 bullet points.
+    - PRICE: In ₹ (Approx).
+    - IMAGE: Generate a high-quality prompt for Pollinations. 
+      Format: "https://image.pollinations.ai/prompt/[SCENE_DESCRIPTION]?width=800&height=600&nologo=true"
+    
+    CONCLUSION: A powerful 250-word wrap-up that gives a definitive recommendation on what to buy and why.
+    
+    Return ONLY a valid JSON object:
     {
-      "conclusion": "A detailed 200-word wrap-up conclusion that summarizes the guide and gives a final recommendation.",
+      "conclusion": "...",
       "products": [
         { 
-          "id": "gen-1", 
-          "name": "Full Product Name (e.g. Boat Storm Call 3)", 
-          "description": "A 50-word detailed breakdown of why this product is a top choice.", 
-          "pros": ["Major advantage 1", "Major advantage 2", "Major advantage 3"], 
-          "price": "₹1,999 (Approx.)", 
-          "affiliateLink": "https://amzn.to/example",
-          "image": "https://image.pollinations.ai/prompt/Boat%20Storm%20Call%203?width=800&height=600&nologo=true"
+          "id": "...", 
+          "name": "...", 
+          "description": "...", 
+          "pros": ["...", "..."], 
+          "price": "...", 
+          "affiliateLink": "...",
+          "image": "..."
         }
       ]
     }
   `;
-  try {
-    const raw = await callGemini(prompt, apiKey, false);
-    const cleanJson = raw.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleanJson);
-  } catch (e: any) {
-    return {
-      conclusion: `GenerateProductsStep Error: ${e.message}`,
-      products: []
-    };
-  }
+  return await callGemini(prompt, apiKey, true);
 }
 
 async function findTrendingTopicStep(apiKey: string) {
   "use step";
   const prompt = `
-    Give me one highly trending tech or gadget shopping topic popular in India today (May 2026).
-    Focus on smartphones, earbuds, laptops, or deals.
-    The topic should be a catchy blog title like "Best 5G Phones under 25000 in India (May 2026)" or "Why the New XYZ Earbuds are Killing the Competition".
-    Return ONLY the title string. No quotes, no preamble.
+    Identify ONE high-traffic trending shopping topic in India today (May 2026).
+    Focus: Electronics, Home Tech, or Personal Care.
+    Topic must be "Search Optimized" - e.g. "Best Noise Cancelling Earbuds under 3000 (May 2026)".
+    Return ONLY the title string.
   `;
-  try {
-    return await callGemini(prompt, apiKey, false);
-  } catch (e) {
-    return `Best Tech Gadgets to Buy in India (2026)`;
-  }
+  return await callGemini(prompt, apiKey, false);
 }
 
 async function saveBlogPostStep(blogPost: any) {
@@ -213,23 +301,10 @@ async function saveBlogPostStep(blogPost: any) {
   const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/blogPosts`;
 
   try {
-    // We use the REST API directly for reliability in serverless workflow steps
-    // Convert blogPost to Firestore REST format
+    // Convert blogPost to Firestore REST format using the robust helper
     const fields: any = {};
     for (const [key, value] of Object.entries(blogPost)) {
-      if (typeof value === 'string') fields[key] = { stringValue: value };
-      else if (typeof value === 'number') fields[key] = { doubleValue: value };
-      else if (typeof value === 'boolean') fields[key] = { booleanValue: value };
-      else if (Array.isArray(value)) {
-        fields[key] = { 
-          arrayValue: { 
-            values: value.map(v => ({ mapValue: { fields: Object.entries(v).reduce((acc: any, [k, val]: any) => {
-              acc[k] = { stringValue: String(val) };
-              return acc;
-            }, {}) } }))
-          } 
-        };
-      }
+      fields[key] = toFirestoreValue(value);
     }
 
     const res = await fetch(FIRESTORE_BASE, {
@@ -238,20 +313,11 @@ async function saveBlogPostStep(blogPost: any) {
       body: JSON.stringify({ fields })
     });
 
-    if (!res.ok) throw new Error(`Firestore save failed: ${res.status}`);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Firestore save failed: ${res.status} - ${err}`);
+    }
     
-    // Also update global stats (optional, but good)
-    const statsUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/settings/site_stats?updateMask.fieldPaths=totalBlogs`;
-    await fetch(statsUrl, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fields: {
-          totalBlogs: { integerValue: 100 } // This is complex with REST without getting first. Let's keep it simple for now.
-        }
-      })
-    });
-
     return true;
   } catch (e) {
     console.error('Failed to save blog post via REST:', e);

@@ -2,6 +2,8 @@ import { start } from 'workflow/api';
 import { blogGenerationWorkflow } from '@/lib/workflows/blog-gen';
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 60; // Max allowed for Vercel Hobby plan
+
 export async function POST(req: Request) {
   try {
     const { title, style, apiKey, secretKey } = await req.json();

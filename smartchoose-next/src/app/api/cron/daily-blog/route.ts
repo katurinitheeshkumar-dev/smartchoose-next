@@ -3,6 +3,8 @@ import { dailyAutoPostWorkflow } from '@/lib/workflows/blog-gen';
 import { getSettings } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 60; // Max allowed for Vercel Hobby plan
+
 export async function GET(req: Request) {
   try {
     // 1. Basic security check for Vercel Cron
