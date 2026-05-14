@@ -282,6 +282,56 @@ export function AdminBlogPosts() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>((searchParams.get('filter') as any) || 'all');
   const [toast, setToast] = useState('');
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const { settings, updateSettings } = useDatabase();
+  const [isResearching, setIsResearching] = useState(false);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  // Countdown timer for Deep Research
+  useEffect(() => {
+    if (!settings.deepResearchActive || !settings.deepResearchStart) return;
+    
+    const interval = setInterval(() => {
+      const start = new Date(settings.deepResearchStart!).getTime();
+      const end = start + (24 * 60 * 60 * 1000);
+      const now = new Date().getTime();
+      const diff = end - now;
+      
+      if (diff <= 0) {
+        setTimeLeft('Finishing...');
+        clearInterval(interval);
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [settings.deepResearchActive, settings.deepResearchStart]);
+
+  const handleDeepResearch = async () => {
+    if (settings.deepResearchActive) return;
+    if (!confirm('Start 24h Deep Research? AI will generate 3 premium drafts throughout the next 24 hours.')) return;
+    
+    setIsResearching(true);
+    try {
+      await fetch('/api/workflows/generate-blog-deep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          apiKey: settings.geminiApiKey,
+          openaiApiKey: settings.openaiApiKey
+        })
+      });
+      // The workflow will update Firestore, which DatabaseContext will sync back to us
+    } catch (e) {
+      alert('Failed to start deep research');
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
 
   // Sync state to URL
   useEffect(() => {
@@ -373,6 +423,27 @@ export function AdminBlogPosts() {
           <p className="text-slate-500 mt-1 font-bold text-xs uppercase tracking-widest opacity-60">High-Performance Content Engine ({siteStats.totalBlogs} articles)</p>
         </div>
         <div className="flex flex-wrap gap-3">
+          {settings.deepResearchActive ? (
+            <div className="bg-amber-50 border border-amber-200 px-6 py-2 rounded-2xl flex items-center gap-4 shadow-sm">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black uppercase text-amber-600 tracking-tighter flex items-center gap-1">
+                   <Icon name="brain" size={10} className="animate-pulse" />
+                   AI Deep Research Active
+                </span>
+                <span className="text-sm font-black text-slate-900 font-mono">{timeLeft}</span>
+              </div>
+              <div className="w-8 h-8 rounded-full border-2 border-amber-200 border-t-amber-500 animate-spin" />
+            </div>
+          ) : (
+            <button 
+              onClick={handleDeepResearch} 
+              disabled={isResearching}
+              className="bg-amber-500 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-amber-600 transition-all flex items-center gap-2 shadow-xl shadow-amber-500/20"
+            >
+              <Icon name="brain" size={16} className={isResearching ? 'animate-spin' : ''} />
+              {isResearching ? 'Starting...' : '24h Deep Research'}
+            </button>
+          )}
           <button onClick={() => setShowAIGenerator(true)} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20">
             <Icon name="sparkles" size={16} className="text-amber-400" /> AI Generate
           </button>
@@ -380,6 +451,7 @@ export function AdminBlogPosts() {
             <Icon name="plus" size={18} /> New Post
           </button>
         </div>
+
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">

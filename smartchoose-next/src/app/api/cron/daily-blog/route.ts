@@ -16,13 +16,15 @@ export async function GET(req: Request) {
     // 2. Get API key from Firestore
     const settings = await getSettings();
     const apiKey = settings.geminiApiKey;
+    const openaiApiKey = settings.openaiApiKey;
 
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API Key not found in settings' }, { status: 500 });
+    if (!apiKey && !openaiApiKey) {
+      return NextResponse.json({ error: 'No AI API Key (Gemini or OpenAI) found in settings' }, { status: 500 });
     }
 
     // 3. Trigger the workflow
-    const run = await start(dailyAutoPostWorkflow, [{ apiKey }]);
+    const run = await start(dailyAutoPostWorkflow, [{ apiKey, openaiApiKey }]);
+
 
     return NextResponse.json({ 
       success: true, 

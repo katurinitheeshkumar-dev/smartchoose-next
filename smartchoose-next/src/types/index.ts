@@ -85,9 +85,14 @@ export interface Settings {
   productWhatsappWebhookUrl?: string;
   productInstagramWebhookUrl?: string;
   geminiApiKey?: string;
+  openaiApiKey?: string;
   searchConsoleId?: string;
   googleAnalyticsId?: string;
+  deepResearchActive?: boolean;
+  deepResearchStart?: string;
 }
+
+
 
 // Analytics Types
 export interface Analytics {

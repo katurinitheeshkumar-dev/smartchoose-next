@@ -13,19 +13,31 @@ export async function GET(req: Request) {
     const run = getRun(runId);
     const status = await run.status;
     let output = null;
+    let error = null;
     
     if (status?.toUpperCase() === 'COMPLETED') {
       output = await run.returnValue;
+    } else if (status?.toUpperCase() === 'FAILED') {
+      // Retrieve the error from the run. In many workflow libraries, 
+      // the error is available via run.error or by awaiting run.returnValue which might throw.
+      try {
+        // Awaiting the return value of a failed run usually throws the error
+        await run.returnValue;
+      } catch (e: any) {
+        error = e.message || 'Unknown workflow error';
+      }
+
     }
 
     return NextResponse.json({
       status,
       output,
-      error: null, // Error handling would happen via try-catch or status check
+      error,
       runId: run.runId
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Workflow status error:', error);
-    return NextResponse.json({ error: 'Failed to fetch workflow status' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to fetch workflow status' }, { status: 500 });
   }
 }
+

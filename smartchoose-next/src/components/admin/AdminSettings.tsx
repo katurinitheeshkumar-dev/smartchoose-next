@@ -587,6 +587,19 @@ export function AdminSettings() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                  OpenAI API Key (Alternative)
+                  <a href="https://platform.openai.com/api-keys" target="_blank" className="text-[10px] text-emerald-600 underline">Get Key</a>
+                </label>
+                <input
+                  type="password"
+                  placeholder="sk-..."
+                  value={formData.openaiApiKey || ''}
+                  onChange={(e) => setFormData({ ...formData, openaiApiKey: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none font-mono text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
                   Google Search Console ID
                   <span className="text-[10px] text-slate-400">For indexing</span>
                 </label>

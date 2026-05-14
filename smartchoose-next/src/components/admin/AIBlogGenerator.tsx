@@ -39,8 +39,10 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
           title, 
           style, 
           apiKey: apiKey.trim(),
+          openaiApiKey: settings.openaiApiKey,
           secretKey: 'optional-secret' // In real app, this would be from env
         })
+
       });
 
       if (!startRes.ok) {
