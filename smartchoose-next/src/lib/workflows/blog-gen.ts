@@ -213,44 +213,27 @@ export async function blogGenerationWorkflow(input: { title: string; style: stri
 export async function deepResearchWorkflow(input: { apiKey?: string, openaiApiKey?: string }) {
   "use workflow";
   const keys = { geminiApiKey: input.apiKey, openaiApiKey: input.openaiApiKey };
-  const PROJECT_ID = 'smartchoose-official';
-  const SETTINGS_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/settings/site_settings?updateMask.fieldPaths=deepResearchActive&updateMask.fieldPaths=deepResearchStart`;
+  const total = 3;
 
-  // 0. Mark as Active in Firestore
-  await fetch(SETTINGS_URL, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fields: {
-        deepResearchActive: { booleanValue: true },
-        deepResearchStart: { stringValue: new Date().toISOString() }
-      }
-    })
-  });
+  // 0. Start Research Tracking
+  await updateDeepResearchStatusStep({ active: true, count: 0, total });
 
   try {
-    // Loop to generate 3 high-quality drafts
-    for (let i = 0; i < 3; i++) {
-      // 1. Verify/Find Topic
+    for (let i = 0; i < total; i++) {
+      // 1. Find/Verify Topic
       const topic = await findTrendingTopicStep(keys);
       
-      // 2. "Thinking" Pause (Wait 6 hours between each for a total of ~18-24h cycle)
-      // Note: In real world, we'd use workflow.wait(), but for this simulation 
-      // we'll use a shorter time or just proceed to show it's working if testing.
-      // However, for the user's "24h" requirement:
-      // await workflow.wait(60 * 60 * 6); 
-
-      // 3. Deep Research & Generate
+      // 2. Research & Generate
       const meta = await planBlogStep(topic, 'professional', keys);
-      const body = await writeContentStep(meta.title, meta.intro, keys);
+      const bodyHtml = await writeContentStep(meta.title, meta.intro, keys);
       const extra = await generateProductsStep(meta.title, keys);
 
-      // 4. Save as Draft
+      // 3. Save as Draft
       const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(meta.title)}?width=1200&height=800&nologo=true&seed=${Math.random()}`;
       const now = new Date().toISOString();
       await saveBlogPostStep({
         ...meta,
-        content: `${body}<div>${extra.conclusion}</div>`,
+        content: `${bodyHtml}<div>${extra.conclusion}</div>`,
         products: extra.products,
         featuredImage: imageUrl,
         status: 'draft',
@@ -259,22 +242,22 @@ export async function deepResearchWorkflow(input: { apiKey?: string, openaiApiKe
         createdAt: now,
         updatedAt: now
       });
+
+      // 4. Update Progress
+      await updateDeepResearchStatusStep({ active: true, count: i + 1, total });
+      
+      // 5. Pause (Simulate deep editorial thinking)
+      // For real 24h over 3 blogs, we'd wait 8 hours each.
+      // await workflow.wait(60 * 60 * 8); 
     }
   } finally {
-    // 5. Mark as Inactive
-    await fetch(SETTINGS_URL, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fields: {
-          deepResearchActive: { booleanValue: false }
-        }
-      })
-    });
+    // 6. Complete
+    await updateDeepResearchStatusStep({ active: false });
   }
 
   return { success: true };
 }
+
 
 
 /**
@@ -466,3 +449,30 @@ async function saveBlogPostStep(blogPost: any) {
     return false;
   }
 }
+async function updateDeepResearchStatusStep(status: { active: boolean, count?: number, total?: number }) {
+  "use step";
+  const PROJECT_ID = 'smartchoose-official';
+  
+  const fields: any = {
+    deepResearchActive: { booleanValue: status.active }
+  };
+  
+  const masks = ['deepResearchActive'];
+
+  if (status.active) {
+    fields.deepResearchStart = { stringValue: new Date().toISOString() };
+    fields.deepResearchCount = { integerValue: status.count || 0 };
+    fields.deepResearchTotal = { integerValue: status.total || 0 };
+    masks.push('deepResearchStart', 'deepResearchCount', 'deepResearchTotal');
+  }
+
+  const maskStr = masks.map(m => `updateMask.fieldPaths=${m}`).join('&');
+  const URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/settings/site_settings?${maskStr}`;
+
+  await fetch(URL, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields })
+  });
+}
+

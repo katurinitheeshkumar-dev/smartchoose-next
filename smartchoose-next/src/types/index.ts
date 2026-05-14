@@ -90,7 +90,10 @@ export interface Settings {
   googleAnalyticsId?: string;
   deepResearchActive?: boolean;
   deepResearchStart?: string;
+  deepResearchCount?: number;
+  deepResearchTotal?: number;
 }
+
 
 
 

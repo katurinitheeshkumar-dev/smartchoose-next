@@ -428,8 +428,9 @@ export function AdminBlogPosts() {
               <div className="flex flex-col">
                 <span className="text-[9px] font-black uppercase text-amber-600 tracking-tighter flex items-center gap-1">
                    <Icon name="brain" size={10} className="animate-pulse" />
-                   AI Deep Research Active
+                   AI Deep Research: {settings.deepResearchCount || 0} of {settings.deepResearchTotal || 3} Blogs Drafted
                 </span>
+
                 <span className="text-sm font-black text-slate-900 font-mono">{timeLeft}</span>
               </div>
               <div className="w-8 h-8 rounded-full border-2 border-amber-200 border-t-amber-500 animate-spin" />
