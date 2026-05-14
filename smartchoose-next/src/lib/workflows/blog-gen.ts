@@ -353,10 +353,7 @@ async function planBlogStep(title: string, style: string, keys: any) {
     - TITLE: Must be a "Power Title" with numbers or strong emotional hooks.
     - SLUG: Clean, SEO-friendly URL slug.
     - CATEGORY: One of [Gadgets, Phones, Laptops, Lifestyle, Deals, Smartwatch, Earbuds].
-    - INTRO: A highly engaging 3-paragraph introduction (350 words). 
-      * Paragraph 1: The "Hook" - identify a common pain point.
-      * Paragraph 2: The "Expert Insight" - why this topic matters right now in India.
-      * Paragraph 3: The "Promise" - what the reader will learn.
+    - INTRO: A punchy, highly engaging introduction (MAX 3 SENTENCES). Focus on a single strong hook.
     - SEO: Optimized for 2026 search trends.
     
     Return ONLY a valid JSON object:
@@ -369,6 +366,7 @@ async function planBlogStep(title: string, style: string, keys: any) {
       "seoDescription": "...",
       "tags": ["...", "...", "..."]
     }
+
   `;
   return await callAI(prompt, keys, true);
 }
@@ -402,7 +400,7 @@ async function generateProductsStep(title: string, keys: any) {
     - DESCRIPTION: 60-word persuasive summary.
     - PROS: 3-4 bullet points.
     - PRICE: In ₹ (Approx).
-    - IMAGE: Generate a high-quality prompt for Pollinations. 
+    - IMAGE_QUERY: A short descriptive query for a product photo (e.g., "iphone 17 pro max natural titanium").
     
     CONCLUSION: A powerful 250-word wrap-up with a definitive recommendation.
     
@@ -416,12 +414,23 @@ async function generateProductsStep(title: string, keys: any) {
           "description": "...", 
           "pros": ["...", "..."], 
           "price": "...", 
-          "image": "..."
+          "imageQuery": "..."
         }
       ]
     }
+
   `;
-  return await callAI(prompt, keys, true);
+  const res = await callAI(prompt, keys, true);
+  const data = JSON.parse(res);
+  
+  if (data.products) {
+    data.products = data.products.map((p: any) => ({
+      ...p,
+      image: `https://image.pollinations.ai/prompt/${encodeURIComponent(p.imageQuery || p.name)}?width=400&height=300&nologo=true&seed=${Math.floor(Math.random() * 1000)}`
+    }));
+  }
+
+  return data;
 }
 
 async function findTrendingTopicStep(keys: any) {
