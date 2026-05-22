@@ -495,8 +495,7 @@ async function generateProductsStep(title: string, keys: any) {
     }
 
   `;
-  const res = await callAI(prompt, keys, true);
-  const data = JSON.parse(res);
+  const data = await callAI(prompt, keys, true);
   
   if (data.products) {
     data.products = data.products.map((p: any) => ({
