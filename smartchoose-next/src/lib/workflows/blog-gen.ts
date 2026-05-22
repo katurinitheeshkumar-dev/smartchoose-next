@@ -65,7 +65,7 @@ async function callAI(
           'Authorization': `Bearer ${groqApiKey}`
         },
         body: JSON.stringify({
-          model: "llama3-70b-8192", 
+          model: "llama-3.3-70b-versatile", 
           messages: [{ role: "user", content: prompt }],
           response_format: isJson ? { type: "json_object" } : undefined,
           temperature: 0.7
@@ -356,7 +356,7 @@ async function verifyAIKeysStep(keys: { geminiApiKey?: string, openaiApiKey?: st
           'Authorization': `Bearer ${groqApiKey}`
         },
         body: JSON.stringify({
-          model: "llama3-70b-8192",
+          model: "llama-3.3-70b-versatile",
           messages: [{ role: "user", content: "hi" }],
           max_tokens: 5
         })
