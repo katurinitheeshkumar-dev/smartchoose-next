@@ -284,16 +284,21 @@ export default async function handler(req, res) {
                 template: isValue ? 'guide' : 'standard',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                products: (result.products || []).map((p, i) => ({
-                    id: `ai-prod-${Date.now()}-${i}`,
-                    name: p.name,
-                    price: p.price,
-                    image: `https://source.unsplash.com/800x600/?${encodeURIComponent(p.imageHint || p.name || 'gadget')}`,
-                    description: p.description,
-                    pros: p.pros || [],
-                    affiliateLink: p.productLink || '',
-                    smartChooseId: ''
-                }))
+                products: (result.products || []).map((p, i) => {
+                    const searchTerm = encodeURIComponent(p.amazonSearchTerm || p.name);
+                    const trackingId = 'smartthingste-21'; // User's tracking ID
+                    const affiliateLink = p.productLink || `https://www.amazon.in/s?k=${searchTerm}&tag=${trackingId}`;
+                    return {
+                        id: `ai-prod-${Date.now()}-${i}`,
+                        name: p.name,
+                        price: p.price,
+                        image: `https://source.unsplash.com/800x600/?${encodeURIComponent(p.imageHint || p.name || 'gadget')}`,
+                        description: p.description,
+                        pros: p.pros || [],
+                        affiliateLink: affiliateLink,
+                        smartChooseId: ''
+                    };
+                })
             };
         } else if (action === 'automate-full-blog') {
             // Enhanced Product Review (Drafted from existing products)
@@ -436,7 +441,7 @@ export default async function handler(req, res) {
                 - PRODUCT SECTION: Explicitly mention Image, Title, Price, and Rating.
                 - Explicitly use Rupee (₹) pricing.
                 - STRUCTURED PRODUCTS: You MUST generate 5 products as a JSON array in the "products" field. 
-                - Each product object should have: "name", "price" (in ₹), "description" (2-3 sentences), "pros" (array), "imageHint" (keyword for unsplash).
+                - Each product object should have: "name", "price" (in ₹), "description" (2-3 sentences), "pros" (array), "imageHint" (keyword for unsplash), and "amazonSearchTerm" (the exact string to search on Amazon India, e.g., "OnePlus 12R 8GB RAM").
                 RETURN ONLY JSON: { 
                     "title": "${title}", 
                     "intro": "...", 
@@ -444,7 +449,7 @@ export default async function handler(req, res) {
                     "category": "Reviews", 
                     "tags": [...],
                     "products": [
-                        { "name": "...", "price": "₹...", "description": "...", "pros": [...], "cons": [...], "imageHint": "..." },
+                        { "name": "...", "price": "₹...", "description": "...", "pros": [...], "cons": [...], "imageHint": "...", "amazonSearchTerm": "..." },
                         ...
                     ]
                 }.`;

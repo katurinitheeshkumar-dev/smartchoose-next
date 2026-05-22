@@ -53,8 +53,41 @@ async function callAI(
   enableSearch: boolean = false
 ) {
   const { geminiApiKey, openaiApiKey } = keys;
+  const groqApiKey = process.env.GROQ_API_KEY || ""; 
 
-  // Try Gemini First if key exists
+  // Try Groq FIRST (Llama 3 - Completely Free & Fast)
+  if (groqApiKey) {
+    try {
+      const res = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqApiKey}`
+        },
+        body: JSON.stringify({
+          model: "llama3-70b-8192", 
+          messages: [{ role: "user", content: prompt }],
+          response_format: isJson ? { type: "json_object" } : undefined,
+          temperature: 0.7
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        let text = data.choices?.[0]?.message?.content || '';
+        text = cleanAIResponse(text);
+        if (isJson) return JSON.parse(text);
+        return text;
+      } else {
+        const err = await res.json();
+        console.warn(`Groq API Error: ${err.error?.message || 'Unknown'}. Falling back to Gemini...`);
+      }
+    } catch (e: any) {
+      console.warn(`Groq Connection Failed: ${e.message}. Falling back to Gemini...`);
+    }
+  }
+
+  // Try Gemini Second
   if (geminiApiKey) {
     try {
       const body: any = {
@@ -73,7 +106,7 @@ async function callAI(
         body.tools = [{ googleSearchRetrieval: {} }];
       }
 
-      let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
+      let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -83,7 +116,7 @@ async function callAI(
       if (!res.ok && enableSearch) {
         console.warn("Gemini Google Search Grounding failed (likely due to free tier limits). Retrying without search grounding...");
         delete body.tools;
-        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -304,17 +337,42 @@ export async function deepResearchWorkflow(input: { apiKey?: string, openaiApiKe
 async function verifyAIKeysStep(keys: { geminiApiKey?: string, openaiApiKey?: string }) {
   "use step";
   const { geminiApiKey, openaiApiKey } = keys;
+  const groqApiKey = process.env.GROQ_API_KEY || "";
   
-  if (!geminiApiKey && !openaiApiKey) {
+  if (!geminiApiKey && !openaiApiKey && !groqApiKey) {
     throw new Error("DEBUG: No API keys found in the workflow input. Please ensure settings are saved.");
   }
 
+  let groqError = "Not provided";
   let geminiError = "Not provided";
   let openaiError = "Not provided";
 
+  if (groqApiKey) {
+    try {
+      const res = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqApiKey}`
+        },
+        body: JSON.stringify({
+          model: "llama3-70b-8192",
+          messages: [{ role: "user", content: "hi" }],
+          max_tokens: 5
+        })
+      });
+      if (res.ok) return { provider: 'groq' };
+      
+      const errData = await res.json();
+      groqError = `Status ${res.status}: ${errData.error?.message || JSON.stringify(errData)}`;
+    } catch (e: any) {
+      groqError = `Fetch Error: ${e.message}`;
+    }
+  }
+
   if (geminiApiKey) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] })
@@ -354,7 +412,7 @@ async function verifyAIKeysStep(keys: { geminiApiKey?: string, openaiApiKey?: st
   }
 
   // THROW THE FULL DIAGNOSTIC TO THE UI
-  throw new Error(`CRITICAL: AI Keys Failed Verification.\n\nGEMINI: ${geminiError}\n\nOPENAI: ${openaiError}\n\nAction: Please verify your keys start with 'AIza' (Gemini) or 'sk-proj' (OpenAI) and have billing/credits active.`);
+  throw new Error(`CRITICAL: AI Keys Failed Verification.\n\nGROQ: ${groqError}\n\nGEMINI: ${geminiError}\n\nOPENAI: ${openaiError}\n\nAction: Please verify your keys start with 'gsk_' (Groq), 'AIza' (Gemini) or 'sk-proj' (OpenAI) and have billing/credits active.`);
 }
 
 
