@@ -227,3 +227,44 @@ export async function getBlogBySlug(slug: string): Promise<BlogPost | null> {
   );
   return blogs.length > 0 ? (blogs[0] as BlogPost) : null;
 }
+
+/**
+ * Fetch all published blog slugs for generateStaticParams.
+ * Used to pre-render all blog posts at build time for maximum SEO indexability.
+ */
+export async function getAllPublishedBlogSlugs(): Promise<{ slug: string }[]> {
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'blogPosts' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'status' },
+              op: 'EQUAL',
+              value: { stringValue: 'published' },
+            },
+          },
+          select: {
+            fields: [{ fieldPath: 'slug' }],
+          },
+          limit: 1000,
+        },
+      }),
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter((item: any) => item.document?.fields?.slug?.stringValue)
+      .map((item: any) => ({ slug: item.document.fields.slug.stringValue as string }));
+  } catch (e) {
+    console.error('getAllPublishedBlogSlugs error:', e);
+    return [];
+  }
+}
+

@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { m } from 'framer-motion';
-import { Helmet } from 'react-helmet-async';
 import { useDatabase } from '@/contexts/DatabaseContext';
 
 export default function LegalPage() {
@@ -120,11 +119,7 @@ export default function LegalPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-32 pb-20 px-4">
-      <Helmet>
-        <title>{title} | SmartChoose</title>
-        <meta name="description" content={`Official ${title} for SmartChoose. Learn more about our policies and guidelines.`} />
-        <link rel="canonical" href={`https://smartchoose.in${path}`} />
-      </Helmet>
+
       <m.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

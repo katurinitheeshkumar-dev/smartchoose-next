@@ -1,6 +1,13 @@
-"use client";
 import { Suspense } from 'react';
 import JobsPage from '@/sections/JobsPage';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Careers at SmartChoose',
+  alternates: {
+    canonical: '/jobs',
+  },
+};
 
 export default function JobsRoute() {
   return (

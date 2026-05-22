@@ -1,6 +1,6 @@
+"use client";
 import { useState, useMemo } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
-import { Helmet } from 'react-helmet-async';
 import { Icon } from '@/components/ui/custom/Icon';
 import { ensureAbsoluteUrl } from '@/lib/utils';
 import { useDatabase } from '@/contexts/DatabaseContext';
@@ -72,27 +72,7 @@ export default function JobsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-4">
-      <Helmet>
-        <title>SmartChoose Jobs - Find Your Next Career Move</title>
-        <meta name="description" content="Explore verified job openings and career opportunities on SmartChoose Jobs Portal. Verified alerts for engineering, remote, and high-salary roles." />
-        <link rel="canonical" href={`${settings.siteUrl}/jobs`} />
-        
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`${settings.siteUrl}/jobs`} />
-        <meta property="og:title" content="SmartChoose Jobs - Find Your Next Career Move" />
-        <meta property="og:description" content="Verified job alerts curated for the SmartChoose community. Find your next role today." />
-        <meta property="og:image" content={`https://smartchoose-proxy.vercel.app/api/og-job?v=3.png`} />
-        <meta property="og:image:secure_url" content={`https://smartchoose-proxy.vercel.app/api/og-job?v=3.png`} />
-        <meta property="og:image:type" content="image/png" />
 
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content={`${settings.siteUrl}/jobs`} />
-        <meta property="twitter:title" content="SmartChoose Jobs - Find Your Next Career Move" />
-        <meta property="twitter:description" content="Verified job alerts curated for the SmartChoose community. Find your next role today." />
-        <meta property="twitter:image" content={`https://smartchoose-proxy.vercel.app/api/og-job?v=3.png`} />
-      </Helmet>
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Welcome Header */}

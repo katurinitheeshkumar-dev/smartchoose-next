@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Helmet } from 'react-helmet-async';
 import { Icon } from '@/components/ui/custom/Icon';
 import { Footer } from '@/sections/Footer';
 import type { BlogProductBlock, BlogPost } from '@/types';
@@ -315,25 +314,12 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <Helmet>
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDesc} />
-        <link rel="canonical" href={postUrl} />
-        <meta property="og:title" content={seoTitle} />
-        <meta property="og:description" content={seoDesc} />
-        <meta property="og:url" content={postUrl} />
-        <meta property="og:image" content={postImage} />
-        <meta property="og:type" content="article" />
-        <meta name="twitter:title" content={seoTitle} />
-        <meta name="twitter:description" content={seoDesc} />
-        <meta name="twitter:image" content={postImage} />
-        {jsonld && (
-          <script type="application/ld+json">
-            {JSON.stringify(jsonld)}
-          </script>
-        )}
-      </Helmet>
-
+      {jsonld && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonld) }}
+        />
+      )}
       {/* Sticky Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 z-[100] bg-slate-100">
         <div 

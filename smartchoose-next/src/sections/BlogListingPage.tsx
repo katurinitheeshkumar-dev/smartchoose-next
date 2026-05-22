@@ -1,7 +1,7 @@
+"use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/custom/Icon';
-import { Helmet } from 'react-helmet-async';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { Footer } from '@/sections/Footer';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -56,11 +56,6 @@ export function BlogListingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Helmet>
-        <title>Expert Buying Guides & Reviews | SmartChoose Blog</title>
-        <meta name="description" content="Read our professional buying guides, product reviews, and expert shopping tips to make smarter choices." />
-        <link rel="canonical" href="https://smartchoose.in/blog" />
-      </Helmet>
 
       <div className="pt-32 pb-20">
         {/* Header Section */}

@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { m } from 'framer-motion';
-import { Helmet } from 'react-helmet-async';
 import { useDatabase } from '@/contexts/DatabaseContext';
 
 export default function ContactPage() {
@@ -12,11 +11,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-32 pb-20 px-4">
-      <Helmet>
-        <title>Contact Us | SmartChoose</title>
-        <meta name="description" content="Get in touch with SmartChoose for product inquiries, support, or feedback." />
-        <link rel="canonical" href="https://smartchoose.in/contact" />
-      </Helmet>
+
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
         {/* Contact Info */}
         <m.div 

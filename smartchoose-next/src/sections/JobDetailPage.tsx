@@ -3,7 +3,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { ensureAbsoluteUrl } from '@/lib/utils';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Helmet } from 'react-helmet-async';
 import { Icon } from '@/components/ui/custom/Icon';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { useBookmarks } from '@/hooks/useBookmarks';
@@ -97,35 +96,12 @@ export default function JobDetailPage({ initialJob }: { initialJob?: any }) {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-4">
-      <Helmet>
-        <title>{`${job.title} at ${job.company} | ${settings.siteName} Jobs`}</title>
-        <meta name="description" content={`Apply for ${job.title} at ${job.company} in ${job.location}. ${job.salary ? `Salary: ${job.salary}.` : ''} Latest job alert on ${settings.siteName}.`} />
-        <link rel="canonical" href={`${settings.siteUrl}/jobs/${job.id}`} />
-        
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`${settings.siteUrl}/jobs/${id}`} />
-        <meta property="og:title" content={`${job.title} | ${settings.siteName} Jobs`} />
-        <meta property="og:description" content={`Hiring at ${job.company}! Apply now for ${job.title}.`} />
-        <meta property="og:image" content={`${settings.siteUrl}/jobs-og.png`} />
-        <meta property="og:image:secure_url" content={`${settings.siteUrl}/jobs-og.png`} />
-        <meta property="og:image:type" content="image/png" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content={`${settings.siteUrl}/jobs/${id}`} />
-        <meta property="twitter:title" content={`${job.title} | ${settings.siteName} Jobs`} />
-        <meta property="twitter:description" content={`Hiring at ${job.company}! Apply now for ${job.title}.`} />
-        <meta property="twitter:image" content={`${settings.siteUrl}/jobs-og.png`} />
-        
         {jobSchemaData && (
-          <script type="application/ld+json">
-            {JSON.stringify(jobSchemaData)}
-          </script>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jobSchemaData) }}
+          />
         )}
-      </Helmet>
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Back Link */}

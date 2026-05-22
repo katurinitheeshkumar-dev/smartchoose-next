@@ -1,17 +1,12 @@
 import { m } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/custom/Icon';
-import { Helmet } from 'react-helmet-async';
 
 export default function NotFoundPage() {
   const router = useRouter();
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <Helmet>
-        <title>404 - Page Not Found | SmartChoose</title>
-        <meta name="robots" content="noindex, follow" />
-      </Helmet>
       
       <m.div 
         initial={{ opacity: 0, y: 20 }}

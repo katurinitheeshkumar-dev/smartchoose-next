@@ -1,11 +1,15 @@
-"use client";
-import { Suspense } from 'react';
-import BlogPostPage from '@/sections/BlogPostPage';
+import { redirect } from 'next/navigation';
 
-export default function SlugRoute() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="spinner" /></div>}>
-      <BlogPostPage />
-    </Suspense>
-  );
+type Props = {
+  params: Promise<{ slug: string }>
+};
+
+/**
+ * Root-level /[slug] routes are redirected permanently to /blog/[slug]
+ * to avoid duplicate content and "Duplicate without user-selected canonical" in Google Search Console.
+ */
+export default async function SlugRoute({ params }: Props) {
+  const { slug } = await params;
+  redirect(`/blog/${slug}`);
 }
+

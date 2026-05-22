@@ -1,5 +1,12 @@
+import type { Metadata } from 'next';
 import { getHeroProducts, getFeaturedProducts, getLatestBlogs } from '@/lib/db';
 import HomeClient from './HomeClient';
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+};
 
 /**
  * SMARTCHOOSE HOME PAGE (Server Component)

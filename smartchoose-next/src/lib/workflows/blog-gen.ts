@@ -46,27 +46,49 @@ function cleanAIResponse(text: string): string {
 /**
  * UNIFIED AI CALLER (Supports Gemini & OpenAI)
  */
-async function callAI(prompt: string, keys: { geminiApiKey?: string, openaiApiKey?: string }, isJson: boolean = false) {
+async function callAI(
+  prompt: string, 
+  keys: { geminiApiKey?: string, openaiApiKey?: string }, 
+  isJson: boolean = false,
+  enableSearch: boolean = false
+) {
   const { geminiApiKey, openaiApiKey } = keys;
 
   // Try Gemini First if key exists
   if (geminiApiKey) {
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
+      const body: any = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: isJson ? { 
+          response_mime_type: "application/json",
+          temperature: 0.7,
+          topP: 0.95
+        } : {
+          temperature: 0.8,
+          topP: 0.95
+        }
+      };
+
+      if (enableSearch) {
+        body.tools = [{ googleSearchRetrieval: {} }];
+      }
+
+      let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: isJson ? { 
-            response_mime_type: "application/json",
-            temperature: 0.7,
-            topP: 0.95
-          } : {
-            temperature: 0.8,
-            topP: 0.95
-          }
-        })
+        body: JSON.stringify(body)
       });
+
+      // Fallback if search grounding fails (e.g. rate limit, free tier limitations)
+      if (!res.ok && enableSearch) {
+        console.warn("Gemini Google Search Grounding failed (likely due to free tier limits). Retrying without search grounding...");
+        delete body.tools;
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -132,15 +154,27 @@ export async function dailyAutoPostWorkflow(input: { apiKey?: string, openaiApiK
   // 0. Verify at least one key is valid
   await verifyAIKeysStep(keys);
 
-  // 1. Find a trending topic
-  const trendingTopic = await findTrendingTopicStep(keys);
+  // 1. Get blog generation strategy from settings
+  const settings = await getSettingsStep();
+  let isTrending = true;
+  
+  if (settings.blogStrategy === 'evergreen') {
+    isTrending = false;
+  } else if (settings.blogStrategy === 'split') {
+    // Alternate daily between Trending and Evergreen/Universal
+    const day = new Date().getDate();
+    isTrending = (day % 2 === 0);
+  }
 
-  // 2. Run the generation steps
+  // 2. Find a topic (live search grounding or evergreen pool)
+  const trendingTopic = await findTrendingTopicStep(keys, isTrending);
+
+  // 3. Run the generation steps
   const meta = await planBlogStep(trendingTopic, 'engaging', keys);
   const bodyHtml = await writeContentStep(meta.title, meta.intro, keys);
   const extra = await generateProductsStep(meta.title, keys);
 
-  // 3. Finalize Image
+  // 4. Finalize Image
   const imagePrompt = `High quality professional photography for blog post about ${meta.title}, cinematic lighting, 8k resolution, commercial style`;
   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1200&height=800&nologo=true&seed=${Math.floor(Math.random() * 1000)}`;
 
@@ -157,7 +191,7 @@ export async function dailyAutoPostWorkflow(input: { apiKey?: string, openaiApiK
     updatedAt: now,
   };
 
-  // 4. Save to Firestore
+  // 5. Save to Firestore
   const saved = await saveBlogPostStep(blogPost);
   
   if (!saved) {
@@ -416,10 +450,37 @@ async function generateProductsStep(title: string, keys: any) {
   return data;
 }
 
-async function findTrendingTopicStep(keys: any) {
+async function findTrendingTopicStep(keys: any, isTrending: boolean = true) {
   "use step";
-  const prompt = `Identify ONE high-traffic trending shopping topic in India today. Focus: Electronics or Lifestyle. Return ONLY the title string.`;
-  return await callAI(prompt, keys, false);
+  if (isTrending) {
+    const prompt = `Identify ONE high-traffic trending shopping topic in India today. Focus: Electronics or Lifestyle. Return ONLY the title string.`;
+    return await callAI(prompt, keys, false, true); // Enable Google Search Grounding
+  } else {
+    const categories = ["Smartphones", "Smartwatches", "Earbuds", "Laptops", "Gadgets", "Lifestyle"];
+    const category = categories[Math.floor(Math.random() * categories.length)];
+    const prompt = `Identify ONE high-traffic evergreen product buying guide or comparison guide topic for Indian consumers. Focus on the category: ${category}. Return ONLY the title string.`;
+    return await callAI(prompt, keys, false, false); // No Search Grounding needed
+  }
+}
+
+async function getSettingsStep() {
+  "use step";
+  const PROJECT_ID = 'smartchoose-official';
+  const URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/settings/site_settings`;
+  try {
+    const res = await fetch(URL);
+    if (!res.ok) return {};
+    const data = await res.json();
+    const fields = data.fields || {};
+    const settings: any = {};
+    for (const [k, v] of Object.entries(fields)) {
+      if ((v as any).stringValue !== undefined) settings[k] = (v as any).stringValue;
+      else if ((v as any).booleanValue !== undefined) settings[k] = (v as any).booleanValue;
+    }
+    return settings;
+  } catch (e) {
+    return {};
+  }
 }
 
 async function saveBlogPostStep(blogPost: any) {

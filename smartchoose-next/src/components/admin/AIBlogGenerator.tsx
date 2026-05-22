@@ -163,7 +163,7 @@ export function AIBlogGenerator({ onClose, onGenerated }: AIBlogGeneratorProps) 
                   onClick={async () => {
                     if (!apiKey) return alert('Please enter a key first');
                     try {
-                      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }] })

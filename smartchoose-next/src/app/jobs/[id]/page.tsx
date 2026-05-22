@@ -2,8 +2,43 @@ import { Suspense } from 'react';
 import JobDetailPage from '@/sections/JobDetailPage';
 import { getJobById } from '@/lib/db';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
-export default async function JobDetailRoute({ params }: { params: Promise<{ id: string }> }) {
+type Props = {
+  params: Promise<{ id: string }>
+};
+
+export async function generateMetadata(
+  { params }: Props
+): Promise<Metadata> {
+  const { id } = await params;
+  const job = await getJobById(id);
+
+  if (!job) {
+    return {
+      title: 'Job Not Found | SmartChoose'
+    };
+  }
+
+  const title = `${job.title} | Careers at SmartChoose`;
+  const description = `Apply for the ${job.title} role at SmartChoose in ${job.location || 'Remote'}.`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/jobs/${id}`,
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: `https://www.smartchoose.in/jobs/${id}`,
+    }
+  };
+}
+
+export default async function JobDetailRoute({ params }: Props) {
   const { id } = await params;
   const job = await getJobById(id);
 

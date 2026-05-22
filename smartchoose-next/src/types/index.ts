@@ -88,6 +88,8 @@ export interface Settings {
   openaiApiKey?: string;
   searchConsoleId?: string;
   googleAnalyticsId?: string;
+  blogStrategy?: string;
+  blogSearchGrounding?: boolean;
   deepResearchActive?: boolean;
   deepResearchStart?: string;
   deepResearchCount?: number;
