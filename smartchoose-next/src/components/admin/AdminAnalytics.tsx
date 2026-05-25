@@ -178,7 +178,7 @@ export function AdminAnalytics() {
                         {idx + 1}
                       </span>
                       <img
-                        src={product.images?.[0] || 'https://via.placeholder.com/100'}
+                        src={product.images?.[0] || '/logo.png'}
                         alt=""
                         className="w-10 h-10 rounded-lg object-cover bg-slate-100"
                       />

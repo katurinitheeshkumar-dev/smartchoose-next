@@ -39,7 +39,7 @@ export function ProductCard({ product, highlighted = false, onCopy }: ProductCar
   const { recordClick, getProductUrl } = useDatabase();
   const { isAdmin } = useAdmin();
   const cardRef = useRef<HTMLDivElement>(null);
-  const mainImage = product.images?.[0] || 'https://via.placeholder.com/600?text=No+Image';
+  const mainImage = product.images?.[0] || '/logo.png';
 
   // Auto-detect platform from URL
   const platform = useMemo(() => {

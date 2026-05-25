@@ -165,7 +165,7 @@ export function AnalyticsDetailModal({ type, productId, onClose }: AnalyticsDeta
                                             <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600 font-bold text-sm">
                                                 {i + 1}
                                             </span>
-                                            <img src={p.images?.[0] || 'https://via.placeholder.com/40'} alt="" className="w-10 h-10 rounded-md object-cover border border-slate-200" />
+                                            <img src={p.images?.[0] || '/logo.png'} alt="" className="w-10 h-10 rounded-md object-cover border border-slate-200" />
                                             <div className="flex-1 min-w-0" title={p.title}>
                                                 <p
                                                     className="font-semibold text-slate-800 truncate"
@@ -196,7 +196,7 @@ export function AnalyticsDetailModal({ type, productId, onClose }: AnalyticsDeta
                                             <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 font-bold text-sm">
                                                 {i + 1}
                                             </span>
-                                            <img src={p.images?.[0] || 'https://via.placeholder.com/40'} alt="" className="w-10 h-10 rounded-md object-cover border border-slate-200" />
+                                            <img src={p.images?.[0] || '/logo.png'} alt="" className="w-10 h-10 rounded-md object-cover border border-slate-200" />
                                             <div className="flex-1 min-w-0" title={p.title}>
                                                 <p
                                                     className="font-semibold text-slate-800 truncate"

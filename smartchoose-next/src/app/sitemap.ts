@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const SITE_URL = 'https://www.smartchoose.in';
+  const SITE_URL = 'https://smartchoose.in';
   const FIREBASE_PROJECT_ID = 'smartchoose-official';
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -93,3 +93,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticPages;
   }
 }
+

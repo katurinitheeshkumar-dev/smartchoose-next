@@ -91,7 +91,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
     );
   }
 
-  const siteUrl = 'https://www.smartchoose.in';
+  const siteUrl = 'https://smartchoose.in';
   const productUrl = `${siteUrl}/product/${product.id}`;
 
   const handleCopyLink = () => {
@@ -102,7 +102,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
 
   const images = (product?.images && Array.isArray(product.images) && product.images.length > 0) 
     ? product.images 
-    : ['https://via.placeholder.com/600?text=No+Image'];
+    : ['/logo.png'];
 
   const productImage = (product.images && product.images[0]) || `${siteUrl}/logo.png`;
   const seoTitle = product.seoTitle || `${product.title} | SmartChoose`;
@@ -545,7 +545,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
                   >
                     <div className="aspect-square bg-white relative overflow-hidden">
                       <Image 
-                        src={(rp.images?.[0] || 'https://via.placeholder.com/400').replace('http://', 'https://')} 
+                        src={(rp.images?.[0] || '/logo.png').replace('http://', 'https://')} 
                         alt={rp.title}
                         width={400}
                         height={400}
@@ -586,3 +586,4 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
 }
 
 export default ProductDetail;
+

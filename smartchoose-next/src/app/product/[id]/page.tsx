@@ -25,7 +25,7 @@ export async function generateMetadata(
     };
   }
 
-  const baseUrl = 'https://www.smartchoose.in';
+  const baseUrl = 'https://smartchoose.in';
   const title = product.seoTitle || `${product.title} | SmartChoose`;
   const description = product.seoDescription || product.description?.slice(0, 155) || '';
   const image = product.images?.[0] || `${baseUrl}/logo.png`;

@@ -396,14 +396,14 @@ export function AdminBlogPosts() {
       if (editingPost) { 
         await updateBlog(editingPost.id, data); 
         if (data.status === 'published') {
-          requestInstantIndexing(`https://www.smartchoose.in/blog/${data.slug}`);
+          requestInstantIndexing(`https://smartchoose.in/blog/${data.slug}`);
         }
       }
       else { 
         const id = await addBlog(data); 
         if (data.status === 'published') {
           broadcastBlog(id);
-          requestInstantIndexing(`https://www.smartchoose.in/blog/${data.slug}`);
+          requestInstantIndexing(`https://smartchoose.in/blog/${data.slug}`);
         }
       }
       setView('list'); setEditingPost(null); loadBlogs(currentPage);
@@ -503,7 +503,7 @@ export function AdminBlogPosts() {
             {localBlogs.map((post: any) => (
               <div key={post.id} className="p-6 flex items-center gap-6 hover:bg-slate-50/50 cursor-pointer group transition-colors" onClick={() => {setEditingPost(post); setView('editor');}}>
                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 shadow-sm ring-4 ring-white transition-all group-hover:scale-105">
-                  <img src={post.featuredImage || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
+                  <img src={post.featuredImage || '/logo.png'} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-1">
@@ -543,7 +543,7 @@ export function AdminBlogPosts() {
                   const publishData = { ...data, status: 'published' };
                   const id = await addBlog(publishData);
                   broadcastBlog(id);
-                  requestInstantIndexing(`https://www.smartchoose.in/blog/${publishData.slug}`);
+                  requestInstantIndexing(`https://smartchoose.in/blog/${publishData.slug}`);
                   setToast('✅ Blog published successfully!');
                   setTimeout(() => setToast(''), 3000);
                   loadBlogs(1);
@@ -568,3 +568,4 @@ export function AdminBlogPosts() {
 }
 
 export default AdminBlogPosts;
+

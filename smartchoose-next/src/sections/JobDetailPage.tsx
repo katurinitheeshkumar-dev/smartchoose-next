@@ -257,7 +257,7 @@ export default function JobDetailPage({ initialJob }: { initialJob?: any }) {
                       <a href={`https://t.me/${settings.telegramChannelId?.replace('@', '') || 'smartchoose'}`} target="_blank" className="p-2 bg-white rounded-xl text-emerald-500 shadow-sm hover:scale-110 hover:bg-emerald-500 hover:text-white transition-all border border-slate-100">
                         <Icon name="send" size={20} />
                       </a>
-                      <a href={`https://whatsapp.com/channel/your-channel-id`} target="_blank" className="p-2 bg-white rounded-xl text-emerald-500 shadow-sm hover:scale-110 hover:bg-emerald-500 hover:text-white transition-all border border-slate-100">
+                      <a href={`https://whatsapp.com/channel/0029VajWCHy0VycMVZ9K0N1r`} target="_blank" className="p-2 bg-white rounded-xl text-emerald-500 shadow-sm hover:scale-110 hover:bg-emerald-500 hover:text-white transition-all border border-slate-100">
                         <Icon name="message-circle" size={20} />
                       </a>
                    </div>

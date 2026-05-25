@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const SITE_URL = 'https://www.smartchoose.in';
+  const SITE_URL = 'https://smartchoose.in';
 
   return {
     rules: [
@@ -26,3 +26,4 @@ export default function robots(): MetadataRoute.Robots {
     host: SITE_URL,
   };
 }
+

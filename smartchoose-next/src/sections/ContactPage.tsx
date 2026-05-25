@@ -93,7 +93,7 @@ export default function ContactPage() {
                 <label className="text-sm font-semibold text-slate-700 ml-1">Full Name</label>
                 <input 
                   type="text" 
-                  placeholder="John Doe"
+                  placeholder="Ravi Kumar"
                   className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
@@ -101,7 +101,7 @@ export default function ContactPage() {
                 <label className="text-sm font-semibold text-slate-700 ml-1">Email Address</label>
                 <input 
                   type="email" 
-                  placeholder="john@example.com"
+                  placeholder="ravi@gmail.com"
                   className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>

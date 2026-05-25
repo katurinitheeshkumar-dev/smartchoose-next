@@ -117,8 +117,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="/sitemap"
-                  onClick={(e) => { e.preventDefault(); router.push('/sitemap'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                  href="/sitemap.xml"
                   className="hover:text-white transition-colors cursor-pointer"
                 >
                   Sitemap
@@ -168,11 +167,20 @@ export function Footer() {
               </li>
               <li>
                 <a
+                  href="/shipping"
+                  onClick={(e) => { e.preventDefault(); router.push('/shipping'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Shipping Policy
+                </a>
+              </li>
+              <li>
+                <a
                   href="/returns"
                   onClick={(e) => { e.preventDefault(); router.push('/returns'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
-                  Shipping & Return Policy
+                  Return & Refund Policy
                 </a>
               </li>
             </ul>
@@ -185,7 +193,7 @@ export function Footer() {
               Never miss a deal! Join 5,000+ smart shoppers in our WhatsApp channel for instant deal alerts.
             </p>
             <a 
-              href="https://whatsapp.com/channel/your-channel-id" 
+              href="https://whatsapp.com/channel/0029VajWCHy0VycMVZ9K0N1r" 
               target="_blank" 
               rel="noopener noreferrer"
               className="w-full flex items-center justify-center gap-3 py-3.5 bg-[#128C7E] hover:bg-[#075E54] text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-900/40 active:scale-95 group"

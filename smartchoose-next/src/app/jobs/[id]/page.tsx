@@ -33,7 +33,7 @@ export async function generateMetadata(
       title,
       description,
       type: 'website',
-      url: `https://www.smartchoose.in/jobs/${id}`,
+      url: `https://smartchoose.in/jobs/${id}`,
     }
   };
 }

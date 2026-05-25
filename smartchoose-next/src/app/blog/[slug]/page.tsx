@@ -36,7 +36,7 @@ export async function generateMetadata(
   const description = post.seoDescription || post.intro?.slice(0, 155) || '';
   const image = post.featuredImage || 'https://smartchoose.in/logo.png';
 
-  const baseUrl = 'https://www.smartchoose.in';
+  const baseUrl = 'https://smartchoose.in';
 
   return {
     title,
@@ -69,7 +69,7 @@ export default async function BlogPage({ params }: Props) {
   }
 
   // Generate JSON-LD Schema
-  const baseUrl = 'https://www.smartchoose.in';
+  const baseUrl = 'https://smartchoose.in';
   
   const articleSchema = {
     '@context': 'https://schema.org',

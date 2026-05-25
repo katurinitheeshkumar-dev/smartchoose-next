@@ -130,7 +130,7 @@ export function AdminJobs() {
         const id = await addJob(formData);
         if (formData.status === 'active') {
           broadcastJob(id);
-          requestInstantIndexing(`https://www.smartchoose.in/jobs/${id}`);
+          requestInstantIndexing(`https://smartchoose.in/jobs/${id}`);
         }
         setToast({ show: true, message: 'Job posted!', type: 'success' });
       }
@@ -309,3 +309,4 @@ export function AdminJobs() {
 }
 
 export default AdminJobs;
+

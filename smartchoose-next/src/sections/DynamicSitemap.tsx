@@ -60,6 +60,13 @@ export function DynamicSitemap() {
                 <li><a href="/" className="text-slate-600 hover:text-emerald-600 transition-colors">Home Page</a></li>
                 <li><a href="/blog" className="text-slate-600 hover:text-emerald-600 transition-colors">Blog Listing</a></li>
                 <li><a href="/about" className="text-slate-600 hover:text-emerald-600 transition-colors">About Us</a></li>
+                <li><a href="/contact" className="text-slate-600 hover:text-emerald-600 transition-colors">Contact Us</a></li>
+                <li><a href="/jobs" className="text-slate-600 hover:text-emerald-600 transition-colors">Job Alerts</a></li>
+                <li><a href="/shipping" className="text-slate-600 hover:text-emerald-600 transition-colors">Shipping Policy</a></li>
+                <li><a href="/returns" className="text-slate-600 hover:text-emerald-600 transition-colors">Return & Refund Policy</a></li>
+                <li><a href="/privacy" className="text-slate-600 hover:text-emerald-600 transition-colors">Privacy Policy</a></li>
+                <li><a href="/terms" className="text-slate-600 hover:text-emerald-600 transition-colors">Terms of Service</a></li>
+                <li><a href="/disclosure" className="text-slate-600 hover:text-emerald-600 transition-colors">Affiliate Disclosure</a></li>
               </ul>
             </section>
 
@@ -72,7 +79,7 @@ export function DynamicSitemap() {
               <ul className="space-y-3">
                 {publishedBlogs.map((blog: any) => (
                   <li key={blog.id}>
-                    <a href={`/${blog.slug}`} className="text-slate-600 hover:text-emerald-600 transition-colors block truncate">
+                    <a href={`/blog/${blog.slug}`} className="text-slate-600 hover:text-emerald-600 transition-colors block truncate">
                       {blog.title}
                     </a>
                   </li>

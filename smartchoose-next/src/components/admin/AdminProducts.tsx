@@ -196,7 +196,7 @@ export function AdminProducts() {
         successCount++;
         syncedProducts.push({ ...finalData, id: newId });
         // Trigger instant indexing for each synced product
-        requestInstantIndexing(`https://www.smartchoose.in/product/${newId}`);
+        requestInstantIndexing(`https://smartchoose.in/product/${newId}`);
       }
     }
 
@@ -604,7 +604,7 @@ export function AdminProducts() {
         if (finalData.published && productId) {
           setToast({ show: true, message: 'Product created! Broadcasting alerts...', type: 'info' });
           broadcastProduct(productId);
-          requestInstantIndexing(`https://www.smartchoose.in/product/${productId}`);
+          requestInstantIndexing(`https://smartchoose.in/product/${productId}`);
         }
       }
       
@@ -760,7 +760,7 @@ export function AdminProducts() {
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-white rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center p-1 shadow-xs ring-1 ring-slate-100">
-                          <img src={product.images?.[0] || 'https://via.placeholder.com/60'} className="w-full h-full object-contain" />
+                          <img src={product.images?.[0] || '/logo.png'} className="w-full h-full object-contain" />
                         </div>
                         <div className="min-w-0">
                            <div className="flex items-center gap-2 mb-0.5">
@@ -1133,3 +1133,4 @@ export function AdminProducts() {
 }
 
 export default AdminProducts;
+

@@ -66,49 +66,78 @@ export default function LegalPage() {
           <p><strong>Amazon Associates Disclosure:</strong> SmartChoose is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.in / Amazon.com.</p>
         `
       };
-    } else if (path === '/returns') {
+    } else if (path === '/shipping') {
       return {
-        title: 'Shipping & Return Policy',
+        title: 'Shipping Policy',
         content: `
-          <h3>1. Shipping Policy</h3>
-          <p>At <strong>${settings.siteName}</strong>, we ensure that you get the best deals with reliable shipping. Since we are an affiliate platform, shipping is handled directly by our retail partners (Amazon, Flipkart, etc.).</p>
+          <h3>1. How Shipping Works</h3>
+          <p>At <strong>${settings.siteName}</strong>, we are a product discovery and affiliate platform. We do not sell or ship products directly. All orders are fulfilled and shipped by our trusted retail partners (Amazon, Flipkart, Myntra, etc.).</p>
+
+          <h3>2. Shipping Costs</h3>
           <ul>
-            <li><strong>Shipping Cost:</strong> Most products listed on our platform qualify for <strong>FREE Shipping</strong>.</li>
-            <li><strong>Delivery Time:</strong> Standard delivery usually takes 3-5 business days depending on your location in India.</li>
-            <li><strong>Tracking:</strong> Once you complete a purchase on the retailer's site, you will receive a tracking ID via email/SMS from them.</li>
+            <li><strong>Free Shipping:</strong> Most products listed on our platform qualify for <strong>FREE Shipping</strong> from our retail partners.</li>
+            <li><strong>Paid Shipping:</strong> For some products or locations, the retailer may charge a nominal delivery fee, which will be displayed at checkout on their site.</li>
           </ul>
 
-          <h3>2. Return Window: 7 Days</h3>
-          <p>We provide a <strong>7-day return window</strong> for all products discovered through our platform. You have 7 days after receiving your item to request a return through the original retailer.</p>
+          <h3>3. Delivery Timelines</h3>
+          <ul>
+            <li><strong>Standard Delivery:</strong> 3–5 business days, depending on your location in India.</li>
+            <li><strong>Express Delivery:</strong> Available for select products and locations through the retailer's platform.</li>
+            <li><strong>Remote Locations:</strong> Delivery to remote or rural areas may take up to 7–10 business days.</li>
+          </ul>
+
+          <h3>4. Order Tracking</h3>
+          <p>Once you complete a purchase on the retailer's website, you will receive a confirmation email and/or SMS with your Order ID and a tracking link directly from the retailer. You can use this to track your shipment in real time.</p>
+
+          <h3>5. Delivery Partners</h3>
+          <p>Delivery is handled by the logistics partners of the respective retail platforms, including but not limited to Delhivery, BlueDart, DTDC, Amazon Logistics, and Flipkart Logistics.</p>
+
+          <h3>6. Damaged or Missing Shipments</h3>
+          <p>If you receive a damaged item or your shipment is missing, please contact the retailer's customer support directly. You can also reach us at <strong>${settings.contactEmail}</strong> and we will help you navigate the process.</p>
+
+          <h3>7. Our Role as an Affiliate</h3>
+          <p><strong>${settings.siteName}</strong> is an affiliate platform. We connect you with the best products and deals on trusted e-commerce platforms. All shipping, handling, and logistics are managed by the respective retailers.</p>
+        `
+      };
+    } else if (path === '/returns') {
+      return {
+        title: 'Return & Refund Policy',
+        content: `
+          <h3>1. Return Window: 7 Days</h3>
+          <p>We support a <strong>7-day return window</strong> for all products discovered through our platform. You have 7 days after receiving your item to request a return through the original retailer where you purchased the product.</p>
           
-          <h3>3. Return Cost: FREE</h3>
+          <h3>2. Return Cost: FREE</h3>
           <p>Returns are <strong>FREE</strong> for all eligible products. You will not be charged for return shipping or any restocking fees when processing a return through our affiliate partners' standard return process.</p>
           
-          <h3>4. How to Initiate a Return</h3>
+          <h3>3. How to Initiate a Return</h3>
           <p>To process a return, please follow these steps on the retailer's website where the purchase was made:</p>
           <ol>
-            <li>Login to your account on the retailer's site (e.g., Amazon.in).</li>
+            <li>Login to your account on the retailer's site (e.g., Amazon.in or Flipkart.com).</li>
             <li>Go to 'Your Orders' and find the product you wish to return.</li>
             <li>Click 'Return or Replace Items' and select the reason for return.</li>
             <li>Choose your preferred return method (Pickup or Self-ship).</li>
           </ol>
           
-          <h3>5. Return Conditions</h3>
+          <h3>4. Return Eligibility Conditions</h3>
           <p>To be eligible for a return, please ensure the following general conditions are met (subject to retailer-specific rules):</p>
           <ul>
             <li>Items must be in the original condition they were received.</li>
             <li>Original packaging, tags, and accessories should be intact.</li>
             <li>The item should not have been used or damaged after delivery.</li>
+            <li>Return request must be raised within the 7-day window from delivery.</li>
           </ul>
 
-          <h3>6. Refund Process</h3>
-          <p>Refunds are issued by the retailer directly to your original payment method. Most refunds are processed within 5-7 business days after the item is picked up or received by the warehouse.</p>
+          <h3>5. Refund Process</h3>
+          <p>Refunds are issued by the retailer directly to your original payment method. Most refunds are processed within 5–7 business days after the item is picked up or received by the warehouse.</p>
+
+          <h3>6. Non-Returnable Items</h3>
+          <p>Certain items may not be eligible for return as per the retailer's policy, including digital products, perishables, and items that are not in original condition. Please check the specific return policy on the retailer's website before purchasing.</p>
 
           <h3>7. Contact for Support</h3>
-          <p>If you encounter any issues with the retailer during the return process or have questions about a product, please contact us at <strong>${settings.contactEmail}</strong> or visit our <a href="/contact" class="text-emerald-600 hover:underline">Contact Page</a>.</p>
+          <p>If you encounter any issues during the return process or have questions, please contact us at <strong>${settings.contactEmail}</strong> or visit our <a href="/contact" class="text-emerald-600 hover:underline">Contact Page</a>.</p>
 
           <h3>8. Affiliate Disclosure</h3>
-          <p><strong>${settings.siteName}</strong> is a product discovery platform. We do not sell, ship, or handle inventory directly. All transactions and after-sales support are provided by the respective retailers.</p>
+          <p><strong>${settings.siteName}</strong> is a product discovery platform. We do not sell, ship, or handle inventory directly. All transactions, returns, and after-sales support are provided by the respective retailers.</p>
         `
       };
     }
