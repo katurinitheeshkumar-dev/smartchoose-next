@@ -146,7 +146,7 @@ function EditorialSidebar({ blogPosts, category }: { blogPosts: BlogPost[]; cate
           Get the world's best tech and lifestyle guides delivered to your inbox every Sunday.
         </p>
         <button className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black transition-all">
-          JOIN 5,000+ READERS
+          GET WEEKLY UPDATES
         </button>
       </div>
     </aside>

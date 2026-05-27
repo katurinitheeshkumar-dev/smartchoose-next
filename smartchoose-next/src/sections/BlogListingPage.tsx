@@ -232,7 +232,7 @@ export function BlogListingPage() {
                     Never miss a <br/>smart choice.
                  </h2>
                  <p className="text-indigo-100 text-lg font-medium mb-10">
-                    Join 10,000+ smart shoppers and get our best buying guides delivered straight to your inbox every week.
+                  Join smart shoppers across India and get our best buying guides delivered to your inbox every week.
                  </p>
                  <form className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto" onSubmit={(e) => e.preventDefault()}>
                     <input 
