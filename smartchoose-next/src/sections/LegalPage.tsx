@@ -94,7 +94,7 @@ export default function LegalPage() {
           <p>SmartChoose shall not be liable for any direct, indirect, incidental, or consequential damages arising from your use of our website or reliance on any information provided.</p>
 
           <h3>9. Dispute Resolution</h3>
-          <p>Any disputes shall first be attempted to be resolved through mutual discussion. If unresolved, disputes shall be subject to the exclusive jurisdiction of the courts in <strong>Hyderabad, Telangana, India</strong>.</p>
+          <p>Any disputes shall first be attempted to be resolved through mutual discussion. If unresolved, disputes shall be subject to the exclusive jurisdiction of the courts in <strong>East Godavari, Andhra Pradesh, India</strong>.</p>
 
           <h3>10. Governing Law</h3>
           <p>These Terms are governed by the laws of <strong>India</strong>, including the Information Technology Act, 2000 and the Consumer Protection Act, 2019.</p>
