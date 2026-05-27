@@ -33,10 +33,10 @@ export function AboutSection() {
   ];
 
   const stats = [
-    { value: '98%', label: 'Satisfaction', color: 'emerald' },
-    { value: '₹2Cr+', label: 'User Savings', color: 'green' },
-    { value: '24h', label: 'Support', color: 'emerald' },
-    { value: '50+', label: 'Store Partners', color: 'green' }
+    { value: '100%', label: 'Free to Use', color: 'emerald' },
+    { value: '5★', label: 'Rated Platform', color: 'green' },
+    { value: '24h', label: 'Support Response', color: 'emerald' },
+    { value: '10+', label: 'Store Partners', color: 'green' }
   ];
 
   return (

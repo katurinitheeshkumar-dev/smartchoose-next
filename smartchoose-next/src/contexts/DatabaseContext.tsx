@@ -16,15 +16,15 @@ const defaultSettings: Settings = {
   primaryColor: "#10B981",
   secondaryColor: "#059669",
   accentColor: "#22C55E",
-  phone: "+91 98765 43210",
+  phone: "+91 9247942311",
   email: "hello@smartchoose.in",
   address: "Hyderabad, Telangana, India",
   aboutContent: "SmartChoose is India's premier product discovery platform. We curate the finest products from top e-commerce stores to help you make informed purchasing decisions. Compare prices, read reviews, and shop with confidence.",
-  footerContent: "© 2024 SmartChoose. All rights reserved. Your trusted product discovery partner.",
+  footerContent: "© 2025 SmartChoose. All rights reserved. Your trusted product discovery partner.",
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://smartchoose.in',
   footerLogo: "/logo-white.png",
   contactEmail: "hello@smartchoose.in",
-  contactPhone: "+91 98765 43210",
+  contactPhone: "+91 9247942311",
   contactAddress: "Hyderabad, Telangana, India",
 };
 

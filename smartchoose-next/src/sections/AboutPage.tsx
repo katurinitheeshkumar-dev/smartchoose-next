@@ -41,10 +41,10 @@ export default function AboutPage() {
   ];
 
   const stats = [
-    { value: '98%', label: 'Satisfaction', color: 'emerald' },
-    { value: '₹2Cr+', label: 'User Savings', color: 'green' },
-    { value: '24h', label: 'Support', color: 'emerald' },
-    { value: '50+', label: 'Store Partners', color: 'green' }
+    { value: '100%', label: 'Free to Use', color: 'emerald' },
+    { value: '5★', label: 'Rated Platform', color: 'green' },
+    { value: '24h', label: 'Support Response', color: 'emerald' },
+    { value: '10+', label: 'Store Partners', color: 'green' }
   ];
 
   return (
@@ -134,7 +134,7 @@ export default function AboutPage() {
             </div>
             <div>
               <p className="text-sm text-slate-500">Phone</p>
-              <p className="font-semibold text-slate-900">{settings.phone || '+91 98765 43210'}</p>
+              <p className="font-semibold text-slate-900">{settings.phone || '+91 9247942311'}</p>
             </div>
           </div>
 

@@ -105,7 +105,7 @@ export function HeroSection({ initialProducts = [] }: { initialProducts?: any[] 
             >
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/80 backdrop-blur-md text-emerald-700 text-[10px] sm:text-sm font-bold mb-4 sm:mb-6 shadow-sm border border-emerald-200/50">
                 <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Trusted by 50,000+ Smart Shoppers
+                Trusted by Smart Shoppers Across India
               </div>
               
               <h1 className="text-[28px] sm:text-6xl lg:text-7xl font-extrabold text-slate-900 leading-[1.2] sm:leading-[1.1] mb-4 sm:mb-6 tracking-tight">

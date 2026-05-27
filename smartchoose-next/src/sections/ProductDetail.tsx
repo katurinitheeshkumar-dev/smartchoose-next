@@ -122,7 +122,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
       url: productUrl,
       priceCurrency: 'INR',
       price: priceValue,
-      availability: 'https://schema.org/InStock',
+      availability: product?.inStock === false ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',
     },
     aggregateRating: (product.reviews && product.reviews > 0) ? {
@@ -341,7 +341,7 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
                         {/* Platform Text */}
                         <div className="flex flex-col items-start min-w-0 translate-y-px flex-1">
                           <span className={`font-bold text-[15px] leading-tight ${isBest ? 'text-emerald-800' : 'text-slate-800'}`}>
-                            Buy on {link.platform}
+                          View Deal on {link.platform}
                           </span>
                         </div>
 
@@ -404,19 +404,18 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
               </div>
             </div>
 
-            {/* Trust Badges */}
             <div className="flex flex-wrap gap-4 pt-4">
               <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Icon name="shield-check" size={18} className="text-emerald-500" />
-                Verified Product
+                <Icon name="check-circle" size={18} className="text-emerald-500" />
+                Curated &amp; Reviewed
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Icon name="lock" size={18} className="text-emerald-500" />
-                Secure Payment
+                <Icon name="external-link" size={18} className="text-emerald-500" />
+                Retailer Checkout
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Icon name="refresh-cw" size={18} className="text-emerald-500" />
-                Easy Returns
+                Returns via Retailer
               </div>
             </div>
           </m.div>

@@ -94,7 +94,7 @@ function BlogProductCard({ block, isFirst }: { block: BlogProductBlock; isFirst:
                   }`}
               >
                 <Icon name="shopping-cart" size={16} />
-                Buy on {getPlatformName(block.affiliateLink || (block.smartChooseId ? 'smartchoose.in' : ''))} — {block.price}
+                View Deal on {getPlatformName(block.affiliateLink || (block.smartChooseId ? 'smartchoose.in' : ''))} — {block.price}
               </a>
               {!block.affiliateLink && block.smartChooseId && (
                 <p className="text-[10px] text-slate-400 mt-2 italic font-medium">* Price verified on SmartChoose</p>
@@ -444,13 +444,13 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
                       Based on our 2026 performance benchmarks, the <span className="font-black underline underline-offset-4 decoration-yellow-300">{post.products[0].name}</span> offers the most comprehensive feature set at this price point.
                     </p>
                     <a 
-                      href={post.products[0].affiliateLink || `https://smartchoose.app/product/${post.products[0].smartChooseId}`} 
+                      href={post.products[0].affiliateLink || `https://smartchoose.in/product/${post.products[0].smartChooseId}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-3 px-8 py-4 bg-white text-emerald-600 rounded-2xl font-black text-sm hover:bg-emerald-50 transition-all shadow-xl shadow-black/10"
                     >
                       <Icon name="shopping-cart" size={18} />
-                      BUY ON {getPlatformName(post.products[0].affiliateLink || '').toUpperCase()} — {post.products[0].price}
+                      CHECK BEST PRICE ON {getPlatformName(post.products[0].affiliateLink || '').toUpperCase()}
                     </a>
                   </div>
                 </div>
@@ -540,12 +540,12 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
           <p className="font-bold text-slate-900 text-sm truncate">{post.products?.[0]?.name || post.title}</p>
         </div>
         <a 
-          href={post.products?.[0]?.affiliateLink || (post.products?.[0]?.smartChooseId ? `https://smartchoose.app/product/${post.products[0].smartChooseId}` : '#')} 
+          href={post.products?.[0]?.affiliateLink || (post.products?.[0]?.smartChooseId ? `https://smartchoose.in/product/${post.products[0].smartChooseId}` : '#')} 
           target="_blank" 
           rel="noopener noreferrer"
           className="shrink-0 px-5 py-2.5 bg-emerald-500 text-white text-xs font-black rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
         >
-          BUY ON {getPlatformName(post.products?.[0]?.affiliateLink).toUpperCase()}
+          VIEW DEAL ON {getPlatformName(post.products?.[0]?.affiliateLink).toUpperCase()}
         </a>
       </div>
 
