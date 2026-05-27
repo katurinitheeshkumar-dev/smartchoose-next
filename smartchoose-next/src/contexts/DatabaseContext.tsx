@@ -18,14 +18,14 @@ const defaultSettings: Settings = {
   accentColor: "#22C55E",
   phone: "+91 9247942311",
   email: "hello@smartchoose.in",
-  address: "Hyderabad, Telangana, India",
+  address: "10-19 Kotha Colony, Dharmavaram Kovvur, East Godavari - 534340, Andhra Pradesh, India",
   aboutContent: "SmartChoose is India's premier product discovery platform. We curate the finest products from top e-commerce stores to help you make informed purchasing decisions. Compare prices, read reviews, and shop with confidence.",
   footerContent: "© 2025 SmartChoose. All rights reserved. Your trusted product discovery partner.",
   siteUrl: typeof window !== 'undefined' ? window.location.origin : 'https://smartchoose.in',
   footerLogo: "/logo-white.png",
   contactEmail: "hello@smartchoose.in",
   contactPhone: "+91 9247942311",
-  contactAddress: "Hyderabad, Telangana, India",
+  contactAddress: "10-19 Kotha Colony, Dharmavaram Kovvur, East Godavari - 534340, Andhra Pradesh, India",
 };
 
 // Default Analytics
