@@ -144,7 +144,7 @@ export default function AboutPage() {
             </div>
             <div>
               <p className="text-sm text-slate-500">Email</p>
-              <p className="font-semibold text-slate-900">{settings.email || 'hello@smartchoose.in'}</p>
+              <p className="font-semibold text-slate-900">{settings.email || 'smartchoose.app@gmail.com'}</p>
             </div>
           </div>
 
@@ -154,7 +154,7 @@ export default function AboutPage() {
             </div>
             <div>
               <p className="text-sm text-slate-500">Address</p>
-              <p className="font-semibold text-slate-900">{settings.address || '10-19 Kotha Colony, Dharmavaram Kovvur, East Godavari - 534340, Andhra Pradesh, India'}</p>
+              <p className="font-semibold text-slate-900">{settings.address || '10-19 Kotha Colony, Dharmavaram, Kovvur, East Godavari - 534340, Andhra Pradesh, India'}</p>
             </div>
           </div>
         </m.div>

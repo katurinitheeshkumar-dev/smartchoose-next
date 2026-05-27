@@ -53,13 +53,13 @@ export default function LegalPage() {
           <p>Our website links to third-party e-commerce platforms (Amazon, Flipkart, etc.). Once you leave our site, their privacy policies apply. We are not responsible for the privacy practices of these external sites.</p>
 
           <h3>6. Your Rights</h3>
-          <p>Under the Information Technology Act, 2000 (India), you have the right to access, correct, or request deletion of your personal data. To exercise these rights, contact us at: <strong>${settings.contactEmail || 'hello@smartchoose.in'}</strong></p>
+          <p>Under the Information Technology Act, 2000 (India), you have the right to access, correct, or request deletion of your personal data. To exercise these rights, contact us at: <strong>${settings.contactEmail || 'smartchoose.app@gmail.com'}</strong></p>
 
           <h3>7. Changes to This Policy</h3>
           <p>We may update this Privacy Policy periodically. The "Last Updated" date at the top reflects any changes. Continued use of our website after changes constitutes acceptance of the updated policy.</p>
 
           <h3>8. Contact Us</h3>
-          <p>For privacy-related queries: <strong>${settings.contactEmail || 'hello@smartchoose.in'}</strong> | Phone: <strong>${settings.contactPhone || '+91 9247942311'}</strong></p>
+          <p>For privacy-related queries: <strong>${settings.contactEmail || 'smartchoose.app@gmail.com'}</strong> | Phone: <strong>${settings.contactPhone || '+91 9247942311'}</strong></p>
         `
       };
     } else if (path === '/terms') {
@@ -100,7 +100,7 @@ export default function LegalPage() {
           <p>These Terms are governed by the laws of <strong>India</strong>, including the Information Technology Act, 2000 and the Consumer Protection Act, 2019.</p>
 
           <h3>11. Contact</h3>
-          <p>For questions: <strong>${settings.contactEmail || 'hello@smartchoose.in'}</strong> | Phone: <strong>${settings.contactPhone || '+91 9247942311'}</strong></p>
+          <p>For questions: <strong>${settings.contactEmail || 'smartchoose.app@gmail.com'}</strong> | Phone: <strong>${settings.contactPhone || '+91 9247942311'}</strong></p>
         `
       };
     } else if (path === '/disclosure') {
@@ -131,7 +131,7 @@ export default function LegalPage() {
           <p>This disclosure is made in compliance with the Advertising Standards Council of India (ASCI) guidelines and global affiliate marketing transparency best practices.</p>
 
           <h3>Contact</h3>
-          <p>Questions about our affiliate relationships: <strong>${settings.contactEmail || 'hello@smartchoose.in'}</strong></p>
+          <p>Questions about our affiliate relationships: <strong>${settings.contactEmail || 'smartchoose.app@gmail.com'}</strong></p>
         `
       };
     } else if (path === '/shipping') {
