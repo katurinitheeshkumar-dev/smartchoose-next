@@ -39,10 +39,7 @@ async function updateSettings() {
     
     // Try common document paths for settings
     const paths = [
-      { collection: 'settings', doc: 'main' },
-      { collection: 'settings', doc: 'general' },
-      { collection: 'config', doc: 'settings' },
-      { collection: 'site', doc: 'settings' },
+      { collection: 'settings', doc: 'site_settings' },
     ];
 
     let updated = false;
