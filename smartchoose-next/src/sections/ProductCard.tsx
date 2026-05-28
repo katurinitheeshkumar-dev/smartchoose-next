@@ -186,7 +186,7 @@ export function ProductCard({ product, highlighted = false, onCopy }: ProductCar
           </div>
         </div>
 
-        {/* Affiliate Link Buttons */}
+        {/* Price Comparison Buttons */}
         <div className="flex flex-col gap-1.5 sm:gap-2 w-full mt-2 sm:mt-3">
           {processedLinks.map((link, idx) => (
             <button
@@ -201,7 +201,7 @@ export function ProductCard({ product, highlighted = false, onCopy }: ProductCar
                 <div className="flex flex-col items-start min-w-0 flex-1">
                   <span className="font-bold text-[11px] sm:text-[13px] leading-tight text-slate-800">
                     <span className="sm:hidden">{link.platform}</span>
-                    <span className="hidden sm:inline">Go to {link.platform}</span>
+                    <span className="hidden sm:inline">Check Price on {link.platform}</span>
                   </span>
                 </div>
 
