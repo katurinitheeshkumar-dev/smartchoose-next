@@ -3,7 +3,8 @@ import LegalPage from '@/sections/LegalPage';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Affiliate Disclosure | SmartChoose',
+  title: 'Transparency Policy | SmartChoose',
+  description: 'Learn how SmartChoose operates as an independent product discovery and price comparison platform.',
   alternates: {
     canonical: '/disclosure',
   },

@@ -42,7 +42,7 @@ export default function LegalPage() {
           <ul>
             <li><strong>Google Analytics:</strong> Tracks anonymous usage data such as pages visited, session duration, and traffic sources.</li>
             <li><strong>Firebase:</strong> Used for secure data storage and real-time updates. Firebase may store session tokens.</li>
-            <li><strong>Affiliate Tracking Cookies:</strong> When you click a product link, affiliate networks (such as Amazon Associates) may place cookies on your device to track purchases for commission purposes. These cookies are governed by the respective affiliate network's privacy policy.</li>
+            <li><strong>Partner Tracking:</strong> When you click a product link to a partner retailer, the retailer may place tracking cookies on your device to identify the source of a purchase. These cookies are governed by the respective retailer's privacy policy.</li>
           </ul>
           <p>You can disable cookies in your browser settings. Note that some website features may not function correctly without cookies.</p>
 
@@ -73,10 +73,10 @@ export default function LegalPage() {
           <p>By accessing or using SmartChoose, you agree to be bound by these Terms of Service and all applicable laws and regulations of India.</p>
 
           <h3>2. Nature of Service</h3>
-          <p><strong>${settings.siteName}</strong> is a <strong>product discovery and price comparison platform</strong>. We do not sell, ship, or deliver any products ourselves. All products listed on our platform are sold and fulfilled by third-party retailers (such as Amazon.in, Flipkart.com, etc.). We earn a commission when you make a purchase through our affiliate links at no extra cost to you.</p>
+          <p><strong>${settings.siteName}</strong> is a <strong>product discovery and price comparison platform</strong>. We independently research, curate, and present products to help users make informed purchasing decisions. Products listed on our platform are sold and fulfilled by third-party retailers (such as Amazon.in, Flipkart.com, etc.). We may receive a referral fee from retailers when users click through and make a purchase, at no extra cost to the user.</p>
 
-          <h3>3. Affiliate Disclosure</h3>
-          <p>SmartChoose participates in affiliate marketing programmes including the Amazon Associates Programme and others. We earn advertising fees when users click our links and make qualifying purchases. The price you pay is never affected by this.</p>
+          <h3>3. Referral Programme</h3>
+          <p>SmartChoose participates in referral programmes with trusted retailers including Amazon.in and Flipkart.com. We may earn a referral fee when users click our links and make qualifying purchases. The price you pay is never affected by this.</p>
 
           <h3>4. Price Accuracy</h3>
           <p>Prices shown on SmartChoose are indicative and sourced at the time of listing. Actual prices at checkout may vary. <strong>SmartChoose does not guarantee price accuracy.</strong> Always verify the final price on the retailer's website before completing a purchase.</p>
@@ -105,33 +105,28 @@ export default function LegalPage() {
       };
     } else if (path === '/disclosure') {
       return {
-        title: 'Affiliate Disclosure',
+        title: 'Transparency Policy',
         content: `
           <p><strong>Last Updated: May 2025</strong></p>
-          <p><strong>${settings.siteName}</strong> is committed to full transparency with our readers.</p>
+          <p><strong>${settings.siteName}</strong> is a product discovery and price comparison platform. We are committed to full transparency about how our platform works and how we sustain our operations.</p>
 
-          <h3>What is an Affiliate Link?</h3>
-          <p>An affiliate link is a special URL that tracks when a user clicks from our website to a retailer's website. If you make a purchase after clicking an affiliate link, we may earn a small commission from the retailer at no extra cost to you.</p>
+          <h3>About SmartChoose</h3>
+          <p>SmartChoose independently researches, reviews, and curates products across categories including Electronics, Home Appliances, Clothing, and more. Our editorial team evaluates products based on quality, value, specifications, and user reviews before featuring them on our platform.</p>
 
-          <h3>Our Affiliate Relationships</h3>
-          <p>SmartChoose participates in the following affiliate programmes:</p>
-          <ul>
-            <li><strong>Amazon Associates:</strong> SmartChoose is a participant in the Amazon Services LLC Associates Program (Amazon.in / Amazon.com), an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.</li>
-            <li><strong>Flipkart Affiliate Programme</strong></li>
-            <li><strong>Other e-commerce and retail affiliate networks</strong> operating in India.</li>
-          </ul>
-
-          <h3>Does This Affect You?</h3>
-          <p><strong>No.</strong> The price of any product is exactly the same whether you use our affiliate link or go directly to the retailer. Using our links helps support SmartChoose so we can continue providing free product discovery.</p>
+          <h3>How We Sustain Our Platform</h3>
+          <p>SmartChoose is a free-to-use platform. To sustain our operations, we participate in referral programmes with trusted retailers including Amazon.in and Flipkart.com. When you click through to a retailer and make a purchase, we may receive a referral fee from that retailer. <strong>This does not affect the price you pay — it is the same price as going directly to the retailer.</strong></p>
 
           <h3>Our Editorial Independence</h3>
-          <p>Affiliate relationships do not influence the products we feature or our editorial opinions. We only recommend products we genuinely believe provide value to our users.</p>
+          <p>All product selections and recommendations on SmartChoose are made independently by our editorial team based on genuine research and value assessment. Referral relationships do not influence which products we feature or how we rank them. We only feature products that we genuinely believe provide good value to our users.</p>
+
+          <h3>Price Comparison</h3>
+          <p>SmartChoose compares prices across multiple retailers so you can find the best deal. The prices shown are sourced at the time of listing and may vary. Always check the final price on the retailer's website before completing a purchase.</p>
 
           <h3>Compliance</h3>
-          <p>This disclosure is made in compliance with the Advertising Standards Council of India (ASCI) guidelines and global affiliate marketing transparency best practices.</p>
+          <p>Our referral practices comply with applicable advertising guidelines including those of the Advertising Standards Council of India (ASCI).</p>
 
           <h3>Contact</h3>
-          <p>Questions about our affiliate relationships: <strong>${settings.contactEmail || 'smartchoose.app@gmail.com'}</strong></p>
+          <p>Questions about our platform or transparency practices: <strong>${settings.contactEmail || 'smartchoose.app@gmail.com'}</strong></p>
         `
       };
     } else if (path === '/shipping') {
@@ -139,7 +134,7 @@ export default function LegalPage() {
         title: 'Shipping Policy',
         content: `
           <h3>1. How Shipping Works</h3>
-          <p>At <strong>${settings.siteName}</strong>, we are a product discovery and affiliate platform. We do not sell or ship products directly. All orders are fulfilled and shipped by our trusted retail partners (Amazon, Flipkart, Myntra, etc.).</p>
+          <p>At <strong>${settings.siteName}</strong>, we are a product discovery and price comparison platform. We do not sell or ship products directly. All orders are fulfilled and shipped by our trusted retail partners (Amazon, Flipkart, Myntra, etc.).</p>
 
           <h3>2. Shipping Costs</h3>
           <ul>
@@ -163,8 +158,8 @@ export default function LegalPage() {
           <h3>6. Damaged or Missing Shipments</h3>
           <p>If you receive a damaged item or your shipment is missing, please contact the retailer's customer support directly. You can also reach us at <strong>${settings.contactEmail}</strong> and we will help you navigate the process.</p>
 
-          <h3>7. Our Role as an Affiliate</h3>
-          <p><strong>${settings.siteName}</strong> is an affiliate platform. We connect you with the best products and deals on trusted e-commerce platforms. All shipping, handling, and logistics are managed by the respective retailers.</p>
+          <h3>7. Our Role as a Discovery Platform</h3>
+          <p><strong>${settings.siteName}</strong> is a product discovery and comparison platform. We connect you with the best products and deals on trusted e-commerce platforms. All shipping, handling, and logistics are managed by the respective retailers.</p>
         `
       };
     } else if (path === '/returns') {
@@ -204,8 +199,8 @@ export default function LegalPage() {
           <h3>7. Contact for Support</h3>
           <p>If you encounter any issues during the return process or have questions, please contact us at <strong>${settings.contactEmail}</strong> or visit our <a href="/contact" class="text-emerald-600 hover:underline">Contact Page</a>.</p>
 
-          <h3>8. Affiliate Disclosure</h3>
-          <p><strong>${settings.siteName}</strong> is a product discovery platform. We do not sell, ship, or handle inventory directly. All transactions, returns, and after-sales support are provided by the respective retailers.</p>
+          <h3>8. Our Platform</h3>
+          <p><strong>${settings.siteName}</strong> is a product discovery and price comparison platform. We do not sell, ship, or handle inventory directly. All transactions, returns, and after-sales support are provided by the respective retailers.</p>
         `
       };
     }

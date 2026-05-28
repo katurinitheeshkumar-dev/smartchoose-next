@@ -299,8 +299,15 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
               </div>
             )}
 
-            {/* Action Buttons - View on [Platform] */}
+            {/* Action Buttons - Compare Price on [Platform] */}
             <div className="flex flex-col gap-3 pt-4">
+              {/* SmartChoose Editorial Badge */}
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <Icon name="shield-check" size={16} className="text-emerald-600 flex-shrink-0" />
+                <span className="text-[12px] text-emerald-700 font-semibold">
+                  SmartChoose Editorial Pick — Independently researched &amp; curated by our team
+                </span>
+              </div>
               {(() => {
                 const links = (product?.affiliateLinks && Array.isArray(product.affiliateLinks) && product.affiliateLinks.length > 0)
                   ? [...product.affiliateLinks]
@@ -341,8 +348,9 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
                         {/* Platform Text */}
                         <div className="flex flex-col items-start min-w-0 translate-y-px flex-1">
                           <span className={`font-bold text-[15px] leading-tight ${isBest ? 'text-emerald-800' : 'text-slate-800'}`}>
-                          View Deal on {link.platform}
+                          {isBest ? '🏆 Best Price on ' : 'Check Price on '}{link.platform}
                           </span>
+                          {isBest && <span className="text-[10px] text-emerald-600 font-semibold">Lowest price found</span>}
                         </div>
 
                         {/* Price and CTA */}
@@ -362,12 +370,6 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
                   );
                 });
               })()}
-              {/* Affiliate Link Disclosure */}
-              <div className="space-y-4 pt-2">
-                <p className="text-[11px] text-slate-400 text-center px-4 leading-relaxed">
-                  * As an affiliate, we may earn a commission from qualifying purchases made through our links. This helps support our site at no extra cost to you.
-                </p>
-              </div>
               {/* Share Buttons Row */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
@@ -407,15 +409,15 @@ export function ProductDetail({ productId, onBack, initialProduct }: ProductDeta
             <div className="flex flex-wrap gap-4 pt-4">
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Icon name="check-circle" size={18} className="text-emerald-500" />
-                Curated &amp; Reviewed
+                Independently Curated
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Icon name="external-link" size={18} className="text-emerald-500" />
-                Retailer Checkout
+                <Icon name="bar-chart-2" size={18} className="text-emerald-500" />
+                Price Comparison
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Icon name="refresh-cw" size={18} className="text-emerald-500" />
-                Returns via Retailer
+                <Icon name="star" size={18} className="text-emerald-500" />
+                Editorial Review
               </div>
             </div>
           </m.div>

@@ -162,7 +162,7 @@ export function Footer() {
                   onClick={(e) => { e.preventDefault(); router.push('/disclosure'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                   className="hover:text-white transition-colors cursor-pointer"
                 >
-                  Affiliate Disclosure
+                  Transparency Policy
                 </a>
               </li>
               <li>
