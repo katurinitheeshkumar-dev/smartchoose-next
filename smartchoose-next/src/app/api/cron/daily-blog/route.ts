@@ -1,53 +1,39 @@
-import { start } from 'workflow/api';
-import { dailyAutoPostWorkflow } from '@/lib/workflows/blog-gen';
-import { getSettings } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
-export const maxDuration = 60; // Max allowed for Vercel Hobby plan
+export const maxDuration = 60;
+// Run as background (don't wait for response to complete generation)
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    // 1. Basic security check for Vercel Cron
+    // 1. Auth check
     const authHeader = req.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Get API keys — use env vars first (fast), fallback to Firestore settings
-    let apiKey: string | undefined = undefined;
-    let openaiApiKey: string | undefined = undefined;
+    // 2. Trigger generation in background (don't await — return immediately)
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'https://www.smartchoose.in';
 
-    // If GROQ_API_KEY is in env, blog-gen.ts will use it automatically.
-    // Only fetch Firestore settings if we need Gemini/OpenAI keys.
-    const hasGroqKey = !!process.env.GROQ_API_KEY;
+    // Fire-and-forget: call the generate-blog API in background
+    fetch(`${baseUrl}/api/workflows/generate-blog-trending`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-cron-secret': process.env.CRON_SECRET || '',
+      },
+      body: JSON.stringify({ autoPublish: true }),
+    }).catch((e) => console.error('[CRON] Background blog trigger failed:', e));
 
-    if (!hasGroqKey) {
-      // Slow path: fetch from Firestore only if no env-based key available
-      const settings = await getSettings();
-      apiKey = settings.geminiApiKey;
-      openaiApiKey = settings.openaiApiKey;
-
-      if (!apiKey && !openaiApiKey) {
-        return NextResponse.json({ 
-          error: 'No AI API Key found. Add GROQ_API_KEY to Vercel env or set Gemini/OpenAI key in Admin Settings.' 
-        }, { status: 500 });
-      }
-    }
-
-    // 3. Trigger the workflow (runs in background, returns runId immediately)
-    const run = await start(dailyAutoPostWorkflow, [{ apiKey, openaiApiKey }]);
-
-    console.log(`[CRON] Daily blog workflow started. RunID: ${run.runId}. Provider: ${hasGroqKey ? 'GROQ' : 'Gemini/OpenAI'}`);
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Daily auto-post workflow started',
-      provider: hasGroqKey ? 'groq' : 'gemini/openai',
-      runId: run.runId 
+    return NextResponse.json({
+      success: true,
+      message: 'Daily auto-post triggered in background',
+      time: new Date().toISOString(),
     });
   } catch (error: any) {
     console.error('Daily Cron Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
