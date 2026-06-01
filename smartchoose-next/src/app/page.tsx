@@ -3,6 +3,8 @@ import { getHeroProducts, getFeaturedProducts, getLatestBlogs } from '@/lib/db';
 import HomeClient from './HomeClient';
 
 export const metadata: Metadata = {
+  title: 'SmartChoose - India\'s Product Discovery & Price Comparison Platform',
+  description: 'SmartChoose independently researches and curates the best products in India. Compare prices across Amazon, Flipkart and more. Find the best deals — free, unbiased, and trusted by 50,000+ shoppers.',
   alternates: {
     canonical: '/',
   },

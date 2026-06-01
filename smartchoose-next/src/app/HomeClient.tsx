@@ -5,6 +5,7 @@ import { HeroSection } from '@/sections/HeroSection';
 import { ProductsSection } from '@/sections/ProductsSection';
 import { AboutSection } from '@/sections/AboutSection';
 import { BlogSection } from '@/sections/BlogSection';
+import { HowItWorksSection } from '@/sections/HowItWorksSection';
 import { useSearch } from '@/contexts/SearchContext';
 import { useRouter } from 'next/navigation';
 import type { Product, BlogPost } from '@/types';
@@ -41,6 +42,7 @@ export default function HomeClient({
         </div>
       </Suspense>
       <Suspense fallback={null}>
+        <HowItWorksSection />
         <AboutSection />
         <BlogSection initialBlogs={initialBlogs} />
       </Suspense>
