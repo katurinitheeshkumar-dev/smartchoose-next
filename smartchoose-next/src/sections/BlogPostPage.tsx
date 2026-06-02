@@ -6,6 +6,10 @@ import { Icon } from '@/components/ui/custom/Icon';
 import { Footer } from '@/sections/Footer';
 import type { BlogProductBlock, BlogPost } from '@/types';
 import { useDatabase } from '@/contexts/DatabaseContext';
+import { QuickAnswerBlock } from '@/sections/QuickAnswerBlock';
+import { FaqSection } from '@/sections/FaqSection';
+import { SmartChooseVerdict } from '@/sections/SmartChooseVerdict';
+import { UpgradedProductCard } from '@/sections/UpgradedProductCard';
 
 // Helper to extract platform name from URL
 function getPlatformName(url: string = ''): string {
@@ -29,83 +33,8 @@ function getPlatformName(url: string = ''): string {
   return 'Store';
 }
 
-// ─── Product Card for Blog Post ───────────────────────────────────────────────
-function BlogProductCard({ block, isFirst }: { block: BlogProductBlock; isFirst: boolean }) {
-  return (
-    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all hover:shadow-md ${isFirst ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-slate-100'}`}>
-      <div className="flex flex-col sm:flex-row">
-        {/* Image */}
-        {block.image && (
-          <div className="sm:w-52 sm:shrink-0 aspect-square sm:aspect-auto overflow-hidden bg-slate-100">
-            <img
-              src={block.image}
-              alt={block.name}
-              className="w-full h-full object-cover"
-              onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }}
-            />
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="flex-1 p-5 flex flex-col gap-3">
-          {/* Best Pick Badge */}
-          {isFirst && (
-            <span className="self-start px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
-              <Icon name="star" size={11} /> Editor's Pick
-            </span>
-          )}
-
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <h3 className="font-extrabold text-slate-900 text-lg leading-tight flex-1">{block.name}</h3>
-            <span className="text-2xl font-black text-emerald-600 shrink-0">{block.price}</span>
-          </div>
-
-          {block.description && (
-            <p className="text-slate-600 text-sm leading-relaxed">{block.description}</p>
-          )}
-
-          {/* Pros */}
-          {block.pros && block.pros.some(p => p) && (
-            <div className="bg-emerald-50 rounded-xl p-4">
-              <p className="text-xs font-bold text-emerald-700 mb-3 flex items-center gap-2">
-                <Icon name="check-circle" size={14} /> Why You Should Buy
-              </p>
-              <ul className="space-y-2">
-                {block.pros.filter(p => p).map((pro, i) => (
-                  <li key={i} className="text-xs text-emerald-800 flex items-start gap-2">
-                    <Icon name="check" size={12} className="mt-0.5 shrink-0 text-emerald-500 font-bold" />
-                    {pro}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Buy Button */}
-          {((block.affiliateLink && block.affiliateLink.length > 5) || block.smartChooseId) && (
-            <div className="mt-auto pt-2 text-right sm:text-left">
-              <a
-                href={block.affiliateLink || `https://smartchoose.in/product/${block.smartChooseId}`}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm ${isFirst
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 shadow-emerald-200'
-                  : 'bg-slate-900 text-white hover:bg-slate-800'
-                  }`}
-              >
-                <Icon name="shopping-cart" size={16} />
-                View Deal on {getPlatformName(block.affiliateLink || (block.smartChooseId ? 'smartchoose.in' : ''))} — {block.price}
-              </a>
-              {!block.affiliateLink && block.smartChooseId && (
-                <p className="text-[10px] text-slate-400 mt-2 italic font-medium">* Price verified on SmartChoose</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+// ─── BlogProductCard kept for legacy compatibility ─────────────────────────────
+// New posts use UpgradedProductCard instead
 
 // ─── Editorial Sidebar ──────────────────────────────────────────────────────────
 function EditorialSidebar({ blogPosts, category }: { blogPosts: BlogPost[]; category: string }) {
@@ -389,12 +318,37 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
           <div className="grid lg:grid-cols-[1fr_320px] gap-16">
             {/* Main Column */}
             <main className="min-w-0">
+              {/* ── QUICK ANSWER BLOCK (AI Search Optimized) ── */}
+              {post.quickAnswer && (
+                <QuickAnswerBlock
+                  answer={post.quickAnswer}
+                  winner={post.winner || post.products?.[0]?.name}
+                  rating={post.rating}
+                  lastReviewed={post.lastReviewed || post.updatedAt}
+                />
+              )}
+
               {/* Premium Intro Box */}
               {post.intro && (
                 <div 
                   className="text-xl sm:text-2xl leading-relaxed text-slate-900 font-bold border-l-4 border-emerald-500 pl-8 mb-12 italic tracking-tight"
                   dangerouslySetInnerHTML={{ __html: post.intro }}
                 />
+              )}
+
+              {/* Key Highlights */}
+              {post.highlights && post.highlights.length > 0 && (
+                <div className="bg-slate-50 rounded-2xl p-5 mb-10 border border-slate-100">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Key Highlights</p>
+                  <ul className="space-y-2">
+                    {post.highlights.map((h, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 font-medium">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
               {/* In-Depth Meta */}
@@ -410,11 +364,11 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
                 </div>
               )}
 
-              {/* Standard Template Products */}
+              {/* Upgraded Product Cards (Standard Template) */}
               {post.template === 'standard' && (post.products || []).length > 0 && (
-                <div className="space-y-8 mb-16">
+                <div className="space-y-6 mb-16">
                   {(post.products || []).map((block, idx) => (
-                    <BlogProductCard key={block.id} block={block} isFirst={idx === 0} />
+                    <UpgradedProductCard key={block.id} block={block} rank={idx + 1} />
                   ))}
                 </div>
               )}
@@ -458,15 +412,30 @@ export function BlogPostPage({ initialPost }: { initialPost?: BlogPost }) {
 
               {/* Guide Template Products */}
               {post.template === 'guide' && (post.products || []).length > 0 && (
-                <div className="mt-16 space-y-8">
+                <div className="mt-16 space-y-6">
                   <h2 className="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3">
                     <span className="w-10 h-1 bg-emerald-500 rounded-full" />
-                    Premium Picks for 2026
+                    Top Picks for 2026
                   </h2>
                   {(post.products || []).map((block, idx) => (
-                    <BlogProductCard key={block.id} block={block} isFirst={idx === 0} />
+                    <UpgradedProductCard key={block.id} block={block} rank={idx + 1} />
                   ))}
                 </div>
+              )}
+
+              {/* ── FAQ SECTION ── */}
+              {post.faq && post.faq.length > 0 && (
+                <FaqSection faqs={post.faq} />
+              )}
+
+              {/* ── SMARTCHOOSE VERDICT ── */}
+              {post.verdict && (
+                <SmartChooseVerdict
+                  verdict={post.verdict}
+                  winner={post.winner || post.products?.[0]?.name}
+                  rating={post.rating}
+                  bestFor={post.bestFor || post.products?.[0]?.bestFor}
+                />
               )}
 
               {/* Disclaimer */}

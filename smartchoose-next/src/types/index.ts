@@ -207,8 +207,14 @@ export interface BlogProductBlock {
   price: string;
   description: string;
   pros: string[];
+  cons?: string[];              // Cons list for upgraded cards
   affiliateLink: string;
   smartChooseId?: string;
+  rating?: number;              // 1-5 star rating
+  bestFor?: string;             // "Best Budget", "Editor's Choice", "Best Value"
+  amazonLink?: string;          // Direct Amazon affiliate link
+  flipkartLink?: string;        // Direct Flipkart affiliate link
+  specifications?: Record<string, string>;  // Key specs table
 }
 
 export interface BlogPost {
@@ -232,6 +238,15 @@ export interface BlogPost {
   createdAt: string;
   updatedAt: string;
   broadcasted?: boolean;
+  // AI-First Fields (Phase 1)
+  quickAnswer?: string;        // 50-100 word answer for AI search engines (ChatGPT, Perplexity, Gemini)
+  verdict?: string;            // SmartChoose final editorial verdict
+  faq?: { q: string; a: string }[];  // FAQ pairs for FAQPage schema
+  lastReviewed?: string;       // Editorial review date (ISO string)
+  rating?: number;             // SmartChoose rating 1-5
+  bestFor?: string;            // e.g. "Best Budget Pick", "Best for Gaming"
+  highlights?: string[];       // Key highlights bullet points
+  winner?: string;             // Winner product name (for comparison posts)
 }
 
 // Job Types
