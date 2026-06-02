@@ -268,3 +268,120 @@ export async function getAllPublishedBlogSlugs(): Promise<{ slug: string }[]> {
   }
 }
 
+// ── Comparison Pages (Cache-First) ────────────────────────────────────────────
+
+export interface ComparisonPage {
+  id?: string;
+  slug: string;
+  productA: string;
+  productB: string;
+  title: string;
+  quickAnswer: string;
+  winner: string;
+  winnerReason: string;
+  verdict: string;
+  content: string;
+  comparisonTable: { feature: string; productA: string; productB: string }[];
+  faq: { q: string; a: string }[];
+  products: any[];
+  seoTitle: string;
+  seoDescription: string;
+  rating?: number;
+  fromDatabase: boolean;
+  createdAt: string;
+  updatedAt: string;
+  views?: number;
+}
+
+export interface BestPage {
+  id?: string;
+  slug: string;
+  title: string;
+  category: string;
+  priceLimit?: number;
+  quickAnswer: string;
+  highlights: string[];
+  verdict: string;
+  content: string;
+  faq: { q: string; a: string }[];
+  products: any[];
+  seoTitle: string;
+  seoDescription: string;
+  createdAt: string;
+  updatedAt: string;
+  views?: number;
+}
+
+export async function getComparisonBySlug(slug: string): Promise<ComparisonPage | null> {
+  const pages = await firestoreQuery('comparisons', [makeFilter('slug', 'EQUAL', slug)], [], 1);
+  return pages.length > 0 ? (pages[0] as ComparisonPage) : null;
+}
+
+export async function getAllComparisonSlugs(): Promise<{ slug: string }[]> {
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'comparisons' }], select: { fields: [{ fieldPath: 'slug' }] }, limit: 500 } }),
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data.filter((item: any) => item.document?.fields?.slug?.stringValue).map((item: any) => ({ slug: item.document.fields.slug.stringValue as string }));
+  } catch { return []; }
+}
+
+export async function getBestPageBySlug(slug: string): Promise<BestPage | null> {
+  const pages = await firestoreQuery('bestPages', [makeFilter('slug', 'EQUAL', slug)], [], 1);
+  return pages.length > 0 ? (pages[0] as BestPage) : null;
+}
+
+export async function getAllBestPageSlugs(): Promise<{ slug: string }[]> {
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'bestPages' }], select: { fields: [{ fieldPath: 'slug' }] }, limit: 500 } }),
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data.filter((item: any) => item.document?.fields?.slug?.stringValue).map((item: any) => ({ slug: item.document.fields.slug.stringValue as string }));
+  } catch { return []; }
+}
+
+export async function searchProductsByKeyword(keyword: string, limit = 10): Promise<Product[]> {
+  const products = await firestoreQuery('products', [makeFilter('published', 'EQUAL', true, 'booleanValue')], [], 100) as Product[];
+  const kw = keyword.toLowerCase();
+  return products.filter(p => p.title?.toLowerCase().includes(kw) || p.description?.toLowerCase().includes(kw) || p.category?.toLowerCase().includes(kw) || p.brand?.toLowerCase().includes(kw)).slice(0, limit);
+}
+
+export async function firestoreSave(collection: string, data: Record<string, any>): Promise<string | null> {
+  function toVal(v: any): any {
+    if (v === null || v === undefined) return { nullValue: null };
+    if (typeof v === 'boolean') return { booleanValue: v };
+    if (typeof v === 'string') return { stringValue: v };
+    if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    if (Array.isArray(v)) return { arrayValue: { values: v.map(toVal) } };
+    if (typeof v === 'object') {
+      const fields: any = {};
+      for (const [k, val] of Object.entries(v)) fields[k] = toVal(val);
+      return { mapValue: { fields } };
+    }
+    return { stringValue: String(v) };
+  }
+  const fields: any = {};
+  for (const [k, v] of Object.entries(data)) fields[k] = toVal(v);
+  const res = await fetch(`${FIRESTORE_BASE}/${collection}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields }),
+  });
+  if (!res.ok) return null;
+  const doc = await res.json();
+  return doc.name?.split('/').pop() || null;
+}
